@@ -1,0 +1,33 @@
+import reflex as rx
+
+from app.pages.dashboard import dashboard_page
+from app.pages.documents import documents_page
+from app.pages.jobs import jobs_page
+from app.pages.settings import settings_page
+from app.pages.validation import validation_page
+
+
+def index() -> rx.Component:
+    return dashboard_page()
+
+
+app = rx.App(
+    theme=rx.theme(appearance="light"),
+    head_components=[
+        rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
+        rx.el.link(
+            rel="preconnect",
+            href="https://fonts.gstatic.com",
+            cross_origin="",
+        ),
+        rx.el.link(
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap",
+            rel="stylesheet",
+        ),
+    ],
+)
+app.add_page(index, route="/")
+app.add_page(documents_page, route="/documents")
+app.add_page(jobs_page, route="/jobs")
+app.add_page(validation_page, route="/validation")
+app.add_page(settings_page, route="/settings")

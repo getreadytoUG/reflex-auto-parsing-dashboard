@@ -1,0 +1,476 @@
+{
+  "version": 4,
+  "app_title": "Document Parsing Platform 목업 계획",
+  "nav": {
+    "placement": "none",
+    "items": []
+  },
+  "pages": [
+    {
+      "id": "page-47e3a45c",
+      "name": "Dashboard",
+      "route": "/",
+      "item_ref": {
+        "index": 0,
+        "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+      },
+      "blocks": [
+        {
+          "id": "dashboard-sidebar",
+          "type": "sidebar",
+          "label": "Document Parser 내비게이션",
+          "hint": "Dashboard, Documents, Parsing Jobs, Validation, Settings와 Internal 상태 표시",
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 12,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "dashboard-header",
+          "type": "header",
+          "label": "파싱 운영 현황",
+          "hint": "페이지 제목, 기준 시각, 새 문서 바로가기",
+          "x": 3,
+          "y": 0,
+          "w": 9,
+          "h": 1,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "dashboard-kpis",
+          "type": "kpi",
+          "label": "핵심 KPI",
+          "hint": "전체 문서, 성공, Warning, Failed, 검수 필요, 평균 파싱 시간",
+          "x": 3,
+          "y": 1,
+          "w": 9,
+          "h": 2,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "dashboard-file-chart",
+          "type": "chart_bar",
+          "label": "파일 유형별 문서 수",
+          "hint": "PDF, HWP, HWPX, DOCX, PPTX별 실제 막대가 보이는 분포",
+          "x": 3,
+          "y": 3,
+          "w": 4,
+          "h": 3,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "dashboard-parser-chart",
+          "type": "chart_bar",
+          "label": "Parser별 처리량",
+          "hint": "PyMuPDF, HWP Parser, python-docx 등의 실제 막대가 보이는 처리량",
+          "x": 7,
+          "y": 3,
+          "w": 5,
+          "h": 3,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "dashboard-recent-jobs",
+          "type": "table",
+          "label": "Recent Parsing Jobs",
+          "hint": "파일명, Parser, 상태 Badge, 진행률, 처리시간",
+          "x": 3,
+          "y": 6,
+          "w": 9,
+          "h": 5,
+          "item_ref": {
+            "index": 0,
+            "text": "웜 그레이 작업 공간, 네이비·앰버 상태 색상, 조밀한 한국어 업무용 타이포그래피를 일관되게 적용한 공통 Sidebar와 Dashboard 목업을 구성한다. KPI, 파일 유형별 분포, Parser 처리량, 최근 Job 테이블을 현실적인 샘플 데이터로 표현한다."
+          },
+          "type_source": "palette"
+        }
+      ],
+      "deleted_ids": []
+    },
+    {
+      "id": "page-dbade9f5",
+      "name": "Documents",
+      "route": "/documents",
+      "item_ref": {
+        "index": 1,
+        "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+      },
+      "blocks": [
+        {
+          "id": "documents-sidebar",
+          "type": "sidebar",
+          "label": "Document Parser 내비게이션",
+          "hint": "현재 Documents 메뉴 강조",
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 12,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "documents-header",
+          "type": "header",
+          "label": "Documents",
+          "hint": "검색, 상태·형식 필터, Upload 버튼",
+          "x": 3,
+          "y": 0,
+          "w": 9,
+          "h": 1,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "documents-upload",
+          "type": "text",
+          "label": "문서 업로드 영역",
+          "hint": "지원 형식과 용량 안내가 포함된 드래그 앤 드롭 목업",
+          "x": 3,
+          "y": 1,
+          "w": 9,
+          "h": 2,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "documents-table",
+          "type": "table",
+          "label": "문서 목록",
+          "hint": "파일명, 형식, 크기, 업로드일, 마지막 파싱, 상태, Parser, 작업 메뉴",
+          "x": 3,
+          "y": 3,
+          "w": 9,
+          "h": 9,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        }
+      ],
+      "deleted_ids": []
+    },
+    {
+      "id": "page-e2bcf56a",
+      "name": "Parsing Jobs",
+      "route": "/jobs",
+      "item_ref": {
+        "index": 1,
+        "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+      },
+      "blocks": [
+        {
+          "id": "jobs-sidebar",
+          "type": "sidebar",
+          "label": "Document Parser 내비게이션",
+          "hint": "현재 Parsing Jobs 메뉴 강조",
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 12,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "jobs-header",
+          "type": "header",
+          "label": "Parsing Jobs",
+          "hint": "상태 필터, 검색, Auto refresh 표시",
+          "x": 3,
+          "y": 0,
+          "w": 9,
+          "h": 1,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "jobs-summary",
+          "type": "kpi",
+          "label": "작업 상태 요약",
+          "hint": "Queued, Running, Completed, Warning, Failed, Cancelled 집계",
+          "x": 3,
+          "y": 1,
+          "w": 9,
+          "h": 2,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "jobs-running",
+          "type": "card",
+          "label": "실행 중 Job 목록",
+          "hint": "Job ID, 파일명, Parser, 진행률, 페이지, 현재 단계, 시작 시각, 취소 버튼이 있는 다중 카드",
+          "x": 3,
+          "y": 3,
+          "w": 6,
+          "h": 9,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "jobs-history",
+          "type": "table",
+          "label": "완료 및 오류 Job",
+          "hint": "처리시간, 종료 시각, 오류 메시지, 결과 경로가 보이는 이력",
+          "x": 9,
+          "y": 3,
+          "w": 3,
+          "h": 9,
+          "item_ref": {
+            "index": 1,
+            "text": "Documents와 Parsing Jobs 목업을 구성한다. 업로드 영역, 문서 목록, Parser 선택과 작업 버튼, 상태 필터, 다중 Job 진행률·현재 단계·페이지·오류 상태를 보여주되 실제 업로드·파싱·저장은 수행하지 않는다."
+          },
+          "type_source": "palette"
+        }
+      ],
+      "deleted_ids": []
+    },
+    {
+      "id": "page-e354a40a",
+      "name": "Validation",
+      "route": "/validation",
+      "item_ref": {
+        "index": 2,
+        "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+      },
+      "blocks": [
+        {
+          "id": "validation-sidebar",
+          "type": "sidebar",
+          "label": "Document Parser 내비게이션",
+          "hint": "현재 Validation 메뉴 강조",
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 12,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "validation-header",
+          "type": "header",
+          "label": "Validation: 규정집.pdf",
+          "hint": "문서 선택, 상태, 저장되지 않은 변경 표시, Reparse와 Export 버튼",
+          "x": 3,
+          "y": 0,
+          "w": 9,
+          "h": 1,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "validation-original",
+          "type": "text",
+          "label": "Original Document",
+          "hint": "PDF 페이지 미리보기, 페이지 이동, 확대·축소 도구",
+          "x": 3,
+          "y": 1,
+          "w": 4,
+          "h": 7,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "validation-result",
+          "type": "tabs",
+          "label": "Parsed Result",
+          "hint": "Markdown, JSON, Blocks, Tables 탭과 편집 영역",
+          "x": 7,
+          "y": 1,
+          "w": 5,
+          "h": 7,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "validation-tree",
+          "type": "text",
+          "label": "Structure Tree",
+          "hint": "H1/H2/H3 계층과 선택 상태가 보이는 Heading Tree",
+          "x": 3,
+          "y": 8,
+          "w": 5,
+          "h": 4,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "validation-inspector",
+          "type": "form",
+          "label": "Block Inspector",
+          "hint": "Block 유형, Heading level, 텍스트, 병합·분리·삭제·순서 변경 제어 목업",
+          "x": 8,
+          "y": 8,
+          "w": 4,
+          "h": 4,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        }
+      ],
+      "deleted_ids": []
+    },
+    {
+      "id": "page-3a90e7c5",
+      "name": "Settings",
+      "route": "/settings",
+      "item_ref": {
+        "index": 2,
+        "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+      },
+      "blocks": [
+        {
+          "id": "settings-sidebar",
+          "type": "sidebar",
+          "label": "Document Parser 내비게이션",
+          "hint": "현재 Settings 메뉴 강조",
+          "x": 0,
+          "y": 0,
+          "w": 3,
+          "h": 12,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "settings-header",
+          "type": "header",
+          "label": "Settings",
+          "hint": "내부망 Document Parsing Platform 구성 안내",
+          "x": 3,
+          "y": 0,
+          "w": 9,
+          "h": 1,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "settings-parser",
+          "type": "form",
+          "label": "Parser Registry",
+          "hint": "파일 형식별 Parser Adapter 연결 상태와 기본 Parser 선택 목업",
+          "x": 3,
+          "y": 1,
+          "w": 5,
+          "h": 5,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "settings-worker",
+          "type": "form",
+          "label": "Worker & Queue",
+          "hint": "Worker 수, 동시 작업 수, Polling 간격, Queue 방식 설정 목업",
+          "x": 8,
+          "y": 1,
+          "w": 4,
+          "h": 5,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "settings-storage",
+          "type": "card",
+          "label": "Storage & Export",
+          "hint": "SQLite, Local File System, 결과 보존 기간, Markdown·JSON Export 안내",
+          "x": 3,
+          "y": 6,
+          "w": 5,
+          "h": 4,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        },
+        {
+          "id": "settings-adapter",
+          "type": "card",
+          "label": "Adapter Contract",
+          "hint": "Parser 요청·진행 상태·결과·오류가 UI와 분리된 인터페이스 구조 설명",
+          "x": 8,
+          "y": 6,
+          "w": 4,
+          "h": 4,
+          "item_ref": {
+            "index": 2,
+            "text": "Validation과 Settings 목업을 구성한다. 원본 미리보기, Markdown/JSON/Block 탭, Heading Tree와 구조 편집 도구, Reparse·Export 버튼, Parser/Worker/Storage 설정 화면을 시각화하고 향후 실제 Parser를 연결할 명확한 Adapter 인터페이스 경계를 마련한다."
+          },
+          "type_source": "palette"
+        }
+      ],
+      "deleted_ids": []
+    }
+  ],
+  "attached_to_plan": false
+}
