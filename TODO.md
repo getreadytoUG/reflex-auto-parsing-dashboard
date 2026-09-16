@@ -1,0 +1,99 @@
+# TODO — 목업을 실제 동작하는 앱으로 만들기
+
+이 문서는 현재 저장소가 **정적 목업(Mockup)**이며, 실제로 문서를 업로드·파싱·검수·저장하려면 어떤 설정/구현이 추가로 필요한지 파일과 줄 번호 단위로 정리한 것입니다. 배경 설계는 [REFLEX_AI_BUILDER.md](REFLEX_AI_BUILDER.md)를 참고하세요.
+
+전체 상태를 한 문장으로 요약하면: **UI 레이아웃과 타입 계약(`contracts.py`)만 존재하고, 데이터베이스·Parser 구현체·Job Worker·State의 이벤트 핸들러가 전부 비어 있습니다.**
+
+---
+
+## 1. Database 연결
+
+- 아직 어떤 DB에도 연결되어 있지 않습니다. [rxconfig.py:4-11](rxconfig.py)의 `rx.Config`에 `db_url`이 설정되어 있지 않습니다.
+- `requirements.txt:2`에 `reflex[db]`가 이미 포함되어 있으므로 SQLModel 기반 DB 기능은 사용 가능한 상태입니다.
+- 필요한 작업:
+  1. `rxconfig.py`에 `db_url="sqlite:///docparse.db"` (요구사항 문서상 초기 저장소, [REFLEX_AI_BUILDER.md:123](REFLEX_AI_BUILDER.md) 참조) 추가.
+  2. `app/models/` 패키지를 새로 만들어 `rx.Model` 기반 `Document`, `ParsingJob`, `ParseResult` 테이블 정의 ([REFLEX_AI_BUILDER.md:382-386, 407-419](REFLEX_AI_BUILDER.md)의 필드 구조 참고).
+  3. `reflex db init` / `reflex db makemigrations` / `reflex db migrate` 실행.
+  4. 각 State(`DashboardState`, `DocumentsState`, `JobsState`, `ValidationState`)가 하드코딩된 리스트 대신 DB 쿼리 결과를 로드하도록 변경 (아래 2~5번 항목 참고).
+
+## 2. Parser 구현체 연결 (Adapter 미등록)
+
+- 계약(타입)만 정의되어 있고 구현체가 전혀 없습니다: [app/parsers/contracts.py:159-201](app/parsers/contracts.py)에 `ParserAdapter`, `ParsingService`, `ParserRegistry`가 `Protocol`로만 선언되어 있습니다.
+- `app/parsers/__init__.py`는 완전히 비어 있습니다 — PDF/HWP/HWPX/DOCX/PPTX 어댑터 구현체가 하나도 없습니다.
+- [app/states/settings_state.py:33-79](app/states/settings_state.py)의 `adapters` 테이블에 5개 형식이 모두 `"connection": "연결 대기"` 로 표시되어 있는데, 이는 실제 등록 상태가 아니라 하드코딩된 문자열입니다.
+- 필요한 작업:
+  1. `app/parsers/pdf.py`, `hwp.py`, `hwpx.py`, `docx.py`, `pptx.py`를 만들고 각각 `ParserAdapter` Protocol(`name`, `supported_formats()`, `can_handle()`, `parse()`)을 구현 ([contracts.py:159-170](app/parsers/contracts.py)).
+     - PDF: PyMuPDF 또는 pdfplumber (설정값 참고: [settings_state.py:37](app/states/settings_state.py))
+     - HWP: pyhwp (아직 미도입, [settings_state.py:46](app/states/settings_state.py)에 "예정"으로 표시)
+     - DOCX/PPTX: python-docx, python-pptx
+  2. `app/services/parsing_service.py`에 `ParsingService` Protocol 구현체 작성 ([contracts.py:174-187](app/parsers/contracts.py): `submit`, `progress`, `result`, `cancel`).
+  3. `app/services/registry.py` 등에 `ParserRegistry` 구현체 작성 후 위 어댑터들을 등록.
+  4. 기존 Streamlit 프로젝트에 이미 구현된 Parser 로직이 있다면 재작성하지 말고 그대로 이 Adapter 안에서 호출하도록 감싸기 ([REFLEX_AI_BUILDER.md:356-388, 622](REFLEX_AI_BUILDER.md)의 "기존 Parser 재사용" 원칙).
+
+## 3. 업로드 기능 (Documents 페이지)
+
+- 업로드 영역이 순수 UI이며 실제 파일 저장이 동작하지 않습니다: [app/components/documents_panel.py:38](app/components/documents_panel.py)에 `mock_note("목업 화면 · 실제 업로드 동작 없음")`이 명시되어 있습니다.
+- 업로드 영역 자체가 `rx.upload`가 아니라 정적 `rx.el.div`로만 그려져 있습니다 ([documents_panel.py:25-61](app/components/documents_panel.py)).
+- 문서 행의 액션 버튼(파싱 실행/결과 보기/Validation 이동)도 클릭 이벤트가 없습니다: [documents_panel.py:273](app/components/documents_panel.py)에 `mock_note("버튼은 화면 검토용 목업")`.
+- [app/states/documents_state.py:51-196](app/states/documents_state.py)의 `documents` 리스트 전체가 하드코딩된 샘플 데이터입니다.
+- 필요한 작업:
+  1. `upload_panel()`을 `rx.upload(...)` + `rx.upload_files()`로 교체하고 파일을 `/srv/docparse/originals` 등 저장 경로에 저장하는 이벤트 핸들러 추가 ([settings_state.py:128-131](app/states/settings_state.py)에 예정된 경로 참고).
+  2. 업로드 시 `DocumentInput` ([contracts.py:49-58](app/parsers/contracts.py)) 생성 후 DB에 `Document` 레코드 삽입.
+  3. `DocumentsState.documents`를 `@rx.var` 또는 `load` 이벤트에서 DB 조회로 대체.
+  4. 각 행의 "파싱 실행" 버튼에 `on_click` 핸들러를 추가해 Job 제출 로직(4번 항목)과 연결.
+
+## 4. Job 실행 / Worker 분리 (Parsing Jobs 페이지)
+
+- [app/states/jobs_state.py:32-34](app/states/jobs_state.py)의 `auto_refresh_label`, `last_refreshed_at`, `next_refresh_at`이 고정 문자열이며 실제 타이머/폴링이 없습니다.
+- `jobs` 리스트 전체([jobs_state.py:55-216](app/states/jobs_state.py))가 진행률·현재 페이지·오류 메시지가 모두 하드코딩된 샘플입니다. 실제 Job이 생성/갱신되는 코드가 없습니다.
+- 요구사항상 Parser 실행은 Reflex 이벤트 루프를 막지 않는 별도 Worker에서 돌아야 합니다 ([REFLEX_AI_BUILDER.md:45-51, 423-453](REFLEX_AI_BUILDER.md)). 현재는 UI와 분리된 Worker/Queue 코드가 전혀 없습니다.
+- [settings_state.py:83-86](app/states/settings_state.py)에도 현재 실행 방식이 `"In-process (동기)"`로 명시되어 있어, Reflex 이벤트 내에서 동기 실행하면 UI가 멈추는 구조임을 스스로 경고하고 있습니다.
+- 필요한 작업:
+  1. `app/services/job_service.py`에 Job 생성/조회/취소 로직 구현 (`ParsingService.submit/progress/result/cancel`, [contracts.py:179-187](app/parsers/contracts.py)).
+  2. 파싱 자체는 `asyncio.create_task` 기반 백그라운드 태스크 또는 별도 Python 프로세스(Worker)에서 실행하고, 진행률은 DB(`ParsingJob` 테이블)에 기록.
+  3. `JobsState`에 `rx.event(background=True)` 또는 `yield`로 주기 폴링하는 이벤트를 추가해 3초 간격으로 `ProgressSnapshot`을 가져와 `jobs` 리스트를 갱신 ([settings_state.py:113-117](app/states/settings_state.py)에 명시된 "진행률 폴링 주기: 3초" 반영).
+  4. Documents 페이지의 "파싱 실행" 버튼(3번 항목) → `job_service.submit()` 호출로 연결.
+
+## 5. Validation / 구조 편집 (가장 핵심 화면, 현재 전부 시각화 전용)
+
+- [app/states/validation_state.py](app/states/validation_state.py) 전체가 정적 목업입니다: `viewer_lines`(80-114행), `markdown_lines`/`json_lines`(116-379행), `blocks`(381-452행), `heading_tree`(486-591행) 모두 하드코딩된 한 개 문서 예시입니다.
+- 상단 툴바의 핵심 버튼들이 클릭해도 아무 동작을 하지 않습니다: [app/components/validation_workbench.py:99-113](app/components/validation_workbench.py) (`Reparse`, `Markdown Export`, `JSON Export`), 이를 [validation_workbench.py:142](app/components/validation_workbench.py)에서 `mock_note("목업 화면 · Reparse·Export·편집 동작 없음")`로 명시.
+- Heading level 변경, block 병합/분리/삭제 등 구조 편집 도구도 시각화만 되어 있음: [validation_workbench.py:749](app/components/validation_workbench.py) `mock_note("모든 편집 제어는 시각화 전용")`.
+- 필요한 작업:
+  1. Documents/Jobs에서 완료된 Job의 `ParseResult` ([contracts.py:145-155](app/parsers/contracts.py))를 DB 또는 파일에서 읽어와 `ValidationState`에 로드하는 이벤트 추가 (현재는 `document_id`가 [validation_state.py:63](app/states/validation_state.py)에 고정값으로 박혀 있음).
+  2. 원본 미리보기(Panel A)를 실제 PDF/문서 렌더러(예: pdf.js iframe, 또는 페이지별 이미지)로 교체 — 현재 `viewer_lines`는 텍스트를 흉내 낸 것뿐, 실제 페이지 이미지/좌표(bbox) 연동 없음.
+  3. `Reparse` 버튼에 Job 재제출 이벤트 연결 (4번 Job 항목과 동일 경로).
+  4. `Markdown Export` / `JSON Export` 버튼에 실제 파일 다운로드(`rx.download`) 이벤트 연결, 저장 경로는 [settings_state.py:134-138](app/states/settings_state.py) 참고.
+  5. Heading level 변경, Paragraph↔Heading 전환, Block 순서/병합/분리/삭제, Table 지정 등 편집 동작을 `ValidationState`의 이벤트 핸들러로 구현하고, 수정 결과를 원본 Parser 결과와 별도 테이블에 저장 ([REFLEX_AI_BUILDER.md:339-350](REFLEX_AI_BUILDER.md) "수정 결과는 원본과 별도 관리").
+  6. `change_log`([validation_state.py:615-623](app/states/validation_state.py))를 실제 편집 이력 누적 리스트로 전환.
+
+## 6. Settings 저장 미연결
+
+- Parser/Worker/Storage 설정 화면이 전부 읽기 전용 표시입니다.
+  - [app/components/settings_panels.py:112](app/components/settings_panels.py): `note="목업 화면 · 실제 등록·설정 저장 없음"`
+  - [settings_panels.py:189](app/components/settings_panels.py), [settings_panels.py:199](app/components/settings_panels.py): 각각 Worker/Storage 섹션에 `note="설정 저장 미연결"`
+- 필요한 작업:
+  1. 설정값을 코드 상수가 아니라 DB 테이블(`AppConfig` 등) 또는 설정 파일(`.env`/`config.toml`)로 이전.
+  2. `SettingsState`에 저장/수정 이벤트 핸들러 추가 (`worker_config`, `storage_config`가 현재는 [settings_state.py:81-157](app/states/settings_state.py)에 하드코딩된 표시용 값).
+
+## 7. Dashboard 지표 실데이터 연동
+
+- KPI, 파일 유형 분포, Parser 처리량, 최근 Job, 큐 단계 카운트가 모두 하드코딩입니다: [app/states/dashboard_state.py:29-219](app/states/dashboard_state.py).
+- `reflex_xy` 차트 데이터 소스도 위 하드코딩된 리스트를 그대로 반환합니다: [dashboard_state.py:221-227](app/states/dashboard_state.py) (`file_type_data`, `parser_data`).
+- 필요한 작업: 위 1~4번(DB, Job) 구현 후 `DashboardState`가 `Document`/`ParsingJob` 테이블에 대한 집계 쿼리(`COUNT`, `AVG(duration)`, `GROUP BY file_type` 등)로 값을 채우도록 변경.
+
+## 8. 배포/실행 환경
+
+- `apt-packages.txt`가 비어 있습니다 — HWP 등 바이너리 파싱에 필요한 시스템 패키지(예: LibreOffice headless, 폰트 등)가 정해지면 채워야 합니다.
+- 현재 `reflex run`으로 프론트/백엔드가 뜨는지만 확인된 상태이며, 프로덕션 배포(WSGI/ASGI 서버, 리버스 프록시, 내부망 인증) 설정은 없습니다.
+
+---
+
+## 우선순위 제안 (REFLEX_AI_BUILDER.md 15장 Phase와 매칭)
+
+1. **Phase 2**: DB 연결(1) + Parser Adapter 최소 1종(PDF) 구현(2)
+2. **Phase 3**: 업로드(3) + Job 시스템/Worker 분리(4)
+3. **Phase 4**: Validation 실데이터 로드(5-1, 5-2)
+4. **Phase 5**: 구조 편집 기능(5-5)
+5. **Phase 6**: Reparse/Export(5-3, 5-4)
+6. 나머지: Settings 저장(6), Dashboard 집계(7), 배포 설정(8)
