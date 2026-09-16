@@ -14,6 +14,5 @@ node_modules/
 assets/xy/
 
 # offline install bundles (large binaries, not for GitHub)
-wheelhouse/
 bun-cache/
 frontend-offline/
