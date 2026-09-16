@@ -15,4 +15,3 @@ assets/xy/
 
 # offline install bundles (large binaries, not for GitHub)
 bun-cache/
-frontend-offline/
