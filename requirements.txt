@@ -1,3 +1,5 @@
 
 reflex[db]==0.9.10.post2
 xy[reflex]==0.0.7
+qdrant-client
+langchain-openai

@@ -8,7 +8,7 @@
 
 ## 1. Database 연결
 
-- 아직 어떤 DB에도 연결되어 있지 않습니다. [rxconfig.py:4-11](rxconfig.py)의 `rx.Config`에 `db_url`이 설정되어 있지 않습니다.
+- 아직 어떤 DB에도 연결되어 있지 않습니다. [rxconfig.py:20-31](rxconfig.py)의 `rx.Config`에 `db_url`이 설정되어 있지 않습니다.
 - `requirements.txt:2`에 `reflex[db]`가 이미 포함되어 있으므로 SQLModel 기반 DB 기능은 사용 가능한 상태입니다.
 - 필요한 작업:
   1. `rxconfig.py`에 `db_url="sqlite:///docparse.db"` (요구사항 문서상 초기 저장소, [REFLEX_AI_BUILDER.md:123](REFLEX_AI_BUILDER.md) 참조) 추가.
@@ -32,15 +32,21 @@
 
 ## 3. 업로드 기능 (Documents 페이지)
 
-- 업로드 영역이 순수 UI이며 실제 파일 저장이 동작하지 않습니다: [app/components/documents_panel.py:38](app/components/documents_panel.py)에 `mock_note("목업 화면 · 실제 업로드 동작 없음")`이 명시되어 있습니다.
-- 업로드 영역 자체가 `rx.upload`가 아니라 정적 `rx.el.div`로만 그려져 있습니다 ([documents_panel.py:25-61](app/components/documents_panel.py)).
-- 문서 행의 액션 버튼(파싱 실행/결과 보기/Validation 이동)도 클릭 이벤트가 없습니다: [documents_panel.py:273](app/components/documents_panel.py)에 `mock_note("버튼은 화면 검토용 목업")`.
-- [app/states/documents_state.py:51-196](app/states/documents_state.py)의 `documents` 리스트 전체가 하드코딩된 샘플 데이터입니다.
+**2026-09-17 갱신: 아래 항목 중 목록 조회/파싱 방법 선택/업로드 호출까지는 실연동되었습니다.**
+(설계 근거: [docs/superpowers/specs/2026-09-17-documents-real-integration-design.md](docs/superpowers/specs/2026-09-17-documents-real-integration-design.md))
+
+- ✅ 문서 목록은 더 이상 하드코딩이 아니라 Qdrant(`PARENT_COLLECTION`)에서 실제로 조회합니다 — [app/services/qdrant_service.py](app/services/qdrant_service.py), [app/states/documents_state.py:66-75](app/states/documents_state.py)의 `load_documents`. **주의**: 이 목록은 1번 항목(Database 연결)에서 말하는 SQLModel `Document` 테이블이 아니라 Qdrant를 그대로 소스로 씁니다 — 이 프로젝트는 문서 목록에 한해 SQL DB 대신 Qdrant를 쓰는 쪽으로 방향이 정해졌습니다.
+- ✅ 업로드 영역이 `rx.upload.root(...)`로 교체되어 드래그/클릭 업로드가 실제로 `DocumentsState.upload_selected_file`을 호출합니다 ([documents_panel.py:71-96](app/components/documents_panel.py)).
+- ✅ "기본 Parser 프로필" 드롭다운과 그 아래 파싱 방법(Gemma/MinerU/OpendataLoader) 토글·라디오가 State에 실제로 바인딩되어 있습니다 ([documents_panel.py:105-151](app/components/documents_panel.py), [app/parsers/methods.py](app/parsers/methods.py)).
+- ⛔ 업로드/삭제/DRM 호출은 여전히 스텁입니다 — [app/services/upload_service.py](app/services/upload_service.py)의 세 함수가 실제 내부망 API 스펙이 확정될 때까지 `NotImplementedError`를 던지도록 되어 있고, 업로드 시 이 에러가 `upload_error` 배너로 그대로 노출됩니다.
+- ⛔ Gemma/MinerU/OpendataLoader의 실제 `.parse()` 구현은 여전히 없습니다 ([app/parsers/methods.py](app/parsers/methods.py)) — 선택 UI만 동작하고 실행 버튼과는 아직 연결되지 않았습니다.
+- 문서 행의 액션 버튼(파싱 실행/결과 보기/Validation 이동)은 여전히 클릭 이벤트가 없습니다: [documents_panel.py:290-298](app/components/documents_panel.py).
 - 필요한 작업:
-  1. `upload_panel()`을 `rx.upload(...)` + `rx.upload_files()`로 교체하고 파일을 `/srv/docparse/originals` 등 저장 경로에 저장하는 이벤트 핸들러 추가 ([settings_state.py:128-131](app/states/settings_state.py)에 예정된 경로 참고).
-  2. 업로드 시 `DocumentInput` ([contracts.py:49-58](app/parsers/contracts.py)) 생성 후 DB에 `Document` 레코드 삽입.
-  3. `DocumentsState.documents`를 `@rx.var` 또는 `load` 이벤트에서 DB 조회로 대체.
+  1. `UPLOAD_BASE_URL`/`DELETE_BASE_URL`/`DRM_BASE_URL` API 스펙이 정해지면 `app/services/upload_service.py`의 세 함수 본문만 채우기.
+  2. `check_drm()`을 업로드 흐름 어느 지점에서 호출할지 결정 (업로드 전 검사인지, 별도 단계인지 — 스펙 문서 11절 "미해결 사항" 참고).
+  3. Gemma/MinerU/OpendataLoader 각 클래스의 `parse()`를 실제 구현으로 교체.
   4. 각 행의 "파싱 실행" 버튼에 `on_click` 핸들러를 추가해 Job 제출 로직(4번 항목)과 연결.
+  5. `qdrant-client`/`langchain-openai`를 오프라인 배포용 `wheelhouse/`에 추가 (아직 반영 안 됨, OFFLINE_SETUP.md도 갱신 필요).
 
 ## 4. Job 실행 / Worker 분리 (Parsing Jobs 페이지)
 

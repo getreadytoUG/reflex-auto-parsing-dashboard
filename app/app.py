@@ -5,6 +5,7 @@ from app.pages.documents import documents_page
 from app.pages.jobs import jobs_page
 from app.pages.settings import settings_page
 from app.pages.validation import validation_page
+from app.states.documents_state import DocumentsState
 
 
 def index() -> rx.Component:
@@ -27,7 +28,9 @@ app = rx.App(
     ],
 )
 app.add_page(index, route="/")
-app.add_page(documents_page, route="/documents")
+app.add_page(
+    documents_page, route="/documents", on_load=DocumentsState.load_documents
+)
 app.add_page(jobs_page, route="/jobs")
 app.add_page(validation_page, route="/validation")
 app.add_page(settings_page, route="/settings")

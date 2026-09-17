@@ -8,7 +8,7 @@ def documents_page() -> rx.Component:
     return shell(
         "Documents",
         "운영 / 문서 등록",
-        "원본 문서를 등록하고 Parser를 지정합니다. 현재 화면은 UI 검토용 목업입니다.",
+        "원본 문서를 등록하고 Parser를 지정합니다. 문서 목록은 Qdrant에서 실시간 조회하며, 업로드/삭제/DRM 연동은 API 스펙 확정 후 반영됩니다.",
         "Documents",
         rx.el.div(
             upload_panel(),

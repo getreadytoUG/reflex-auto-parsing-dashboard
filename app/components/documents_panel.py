@@ -22,6 +22,35 @@ def format_pill(fmt: str) -> rx.Component:
     )
 
 
+def method_radio_option(method_name: str) -> rx.Component:
+    return rx.el.label(
+        rx.el.input(
+            type="radio",
+            name="parsing_method",
+            value=method_name,
+            checked=DocumentsState.selected_parsing_method == method_name,
+            on_change=lambda: DocumentsState.set_parsing_method(method_name),
+            class_name="h-3 w-3 accent-[#151d2c]",
+        ),
+        method_name,
+        class_name="flex items-center gap-1.5 text-[12px] font-medium text-stone-700",
+    )
+
+
+def method_radio_group() -> rx.Component:
+    return rx.el.div(
+        rx.el.p(
+            "파싱 방법",
+            class_name="text-[10px] font-semibold uppercase tracking-wider text-stone-500",
+        ),
+        rx.el.div(
+            rx.foreach(DocumentsState.parsing_methods, method_radio_option),
+            class_name="mt-1.5 flex flex-wrap items-center gap-3",
+        ),
+        class_name="mt-2.5 border-t border-stone-200 pt-2.5",
+    )
+
+
 def upload_panel() -> rx.Component:
     return rx.el.section(
         rx.el.div(
@@ -35,29 +64,43 @@ def upload_panel() -> rx.Component:
                     class_name="text-[11px] text-stone-500",
                 ),
             ),
-            mock_note("목업 화면 · 실제 업로드 동작 없음"),
+            mock_note("업로드/삭제/DRM 연동 대기 중 · API 스펙 확정 전"),
             class_name="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 px-3.5 py-2.5",
         ),
         rx.el.div(
-            rx.el.div(
-                rx.icon("cloud-upload", class_name="h-7 w-7 text-stone-400"),
-                rx.el.p(
-                    "파일을 이 영역으로 끌어다 놓거나 클릭하여 선택",
-                    class_name="mt-2 text-[13px] font-semibold text-stone-700",
-                ),
-                rx.el.p(
-                    "1회 최대 20개 · 개별 200MB 이하 · 원본은 변경 없이 보존",
-                    class_name="mt-0.5 text-[11px] text-stone-500",
-                ),
+            rx.upload.root(
                 rx.el.div(
-                    rx.foreach(DocumentsState.supported_formats, format_pill),
-                    class_name="mt-3 flex flex-wrap items-center justify-center gap-1.5",
+                    rx.icon("cloud-upload", class_name="h-7 w-7 text-stone-400"),
+                    rx.el.p(
+                        "파일을 이 영역으로 끌어다 놓거나 클릭하여 선택",
+                        class_name="mt-2 text-[13px] font-semibold text-stone-700",
+                    ),
+                    rx.el.p(
+                        "1회 최대 20개 · 개별 200MB 이하 · 원본은 변경 없이 보존",
+                        class_name="mt-0.5 text-[11px] text-stone-500",
+                    ),
+                    rx.el.div(
+                        rx.foreach(DocumentsState.supported_formats, format_pill),
+                        class_name="mt-3 flex flex-wrap items-center justify-center gap-1.5",
+                    ),
+                    rx.el.p(
+                        "지원 형식: PDF · HWP · HWPX · DOCX · PPTX",
+                        class_name="mt-2 text-[11px] font-medium text-stone-500",
+                    ),
+                    class_name="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 bg-[#faf9f6] px-4 py-8 text-center",
                 ),
+                id="doc_upload",
+                multiple=True,
+                on_drop=DocumentsState.upload_selected_file,
+                class_name="block cursor-pointer",
+            ),
+            rx.cond(
+                DocumentsState.upload_error != "",
                 rx.el.p(
-                    "지원 형식: PDF · HWP · HWPX · DOCX · PPTX",
-                    class_name="mt-2 text-[11px] font-medium text-stone-500",
+                    DocumentsState.upload_error,
+                    class_name="mt-2 border-l-2 border-red-400 bg-red-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-red-700",
                 ),
-                class_name="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 bg-[#faf9f6] px-4 py-8 text-center",
+                rx.fragment(),
             ),
             rx.el.div(
                 rx.el.div(
@@ -65,35 +108,40 @@ def upload_panel() -> rx.Component:
                         "기본 Parser 프로필",
                         class_name="text-[11px] font-semibold uppercase tracking-wider text-stone-500",
                     ),
-                    rx.el.div(
-                        rx.el.select(
-                            rx.foreach(
-                                DocumentsState.parser_options,
-                                lambda p: rx.el.option(p, value=p),
-                            ),
-                            default_value="PyMuPDF",
-                            class_name="w-full appearance-none border border-stone-300 bg-white px-2.5 py-1.5 pr-8 text-[12px] font-medium text-stone-700 outline-hidden focus:border-stone-500",
-                        ),
+                    rx.el.button(
                         rx.icon(
-                            "chevron-down",
-                            class_name="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400",
+                            rx.cond(
+                                DocumentsState.show_method_options,
+                                "chevron-up",
+                                "chevron-down",
+                            ),
+                            class_name="h-3.5 w-3.5",
                         ),
-                        class_name="relative mt-1.5",
+                        on_click=DocumentsState.toggle_method_options,
+                        class_name="text-stone-400 transition-colors hover:text-stone-700",
                     ),
-                    class_name="min-w-0",
+                    class_name="flex items-center justify-between",
                 ),
                 rx.el.div(
-                    rx.el.button(
-                        rx.icon("upload", class_name="h-3.5 w-3.5"),
-                        "Upload",
-                        class_name="flex w-full items-center justify-center gap-1.5 border border-[#151d2c] bg-[#151d2c] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#1f2a3f]",
+                    rx.el.select(
+                        rx.foreach(
+                            DocumentsState.parser_options,
+                            lambda p: rx.el.option(p, value=p),
+                        ),
+                        value=DocumentsState.selected_parser,
+                        on_change=DocumentsState.set_parser,
+                        class_name="w-full appearance-none border border-stone-300 bg-white px-2.5 py-1.5 pr-8 text-[12px] font-medium text-stone-700 outline-hidden focus:border-stone-500",
                     ),
-                    rx.el.button(
-                        rx.icon("folder-open", class_name="h-3.5 w-3.5"),
-                        "파일 선택",
-                        class_name="flex w-full items-center justify-center gap-1.5 border border-stone-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-stone-700 transition-colors hover:bg-stone-100",
+                    rx.icon(
+                        "chevron-down",
+                        class_name="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400",
                     ),
-                    class_name="mt-1.5 grid grid-cols-2 gap-2",
+                    class_name="relative mt-1.5",
+                ),
+                rx.cond(
+                    DocumentsState.show_method_options,
+                    method_radio_group(),
+                    rx.fragment(),
                 ),
                 rx.el.p(
                     "업로드 후 상태는 Uploaded → Queued → Parsing 순으로 전환됩니다.",
@@ -265,7 +313,9 @@ def documents_table() -> rx.Component:
                     class_name="text-[13px] font-bold tracking-tight text-stone-900",
                 ),
                 rx.el.p(
-                    "총 12,486건 중 12건 표시 · 정렬: 업로드일 내림차순",
+                    "총 ",
+                    DocumentsState.documents.length(),
+                    "건 표시",
                     class_name="text-[11px] text-stone-500",
                 ),
             ),
@@ -286,30 +336,44 @@ def documents_table() -> rx.Component:
             class_name="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-3.5 py-2.5",
         ),
         documents_toolbar(),
-        rx.el.div(
-            rx.el.table(
-                rx.el.thead(
-                    rx.el.tr(
-                        th("file", "파일명"),
-                        th("tag", "형식"),
-                        th("hard-drive", "크기"),
-                        th("calendar-plus", "업로드일"),
-                        th("history", "마지막 파싱일"),
-                        th("activity", "상태"),
-                        th("cpu", "선택 Parser"),
-                        rx.el.th("작업", class_name=f"{_TH} text-right"),
-                    ),
-                    class_name="border-b border-stone-200 bg-stone-50",
-                ),
-                rx.el.tbody(
-                    rx.foreach(
-                        DocumentsState.documents,
-                        lambda doc, index: document_row(doc, index),
-                    )
-                ),
-                class_name="w-full table-auto border-collapse",
+        rx.cond(
+            DocumentsState.documents_loading,
+            rx.el.div(
+                "문서 목록을 불러오는 중...",
+                class_name="p-6 text-center text-[12px] text-stone-500",
             ),
-            class_name="w-full overflow-x-auto",
+            rx.cond(
+                DocumentsState.documents_error != "",
+                rx.el.div(
+                    DocumentsState.documents_error,
+                    class_name="p-6 text-center text-[12px] font-semibold text-red-600",
+                ),
+                rx.el.div(
+                    rx.el.table(
+                        rx.el.thead(
+                            rx.el.tr(
+                                th("file", "파일명"),
+                                th("tag", "형식"),
+                                th("hard-drive", "크기"),
+                                th("calendar-plus", "업로드일"),
+                                th("history", "마지막 파싱일"),
+                                th("activity", "상태"),
+                                th("cpu", "선택 Parser"),
+                                rx.el.th("작업", class_name=f"{_TH} text-right"),
+                            ),
+                            class_name="border-b border-stone-200 bg-stone-50",
+                        ),
+                        rx.el.tbody(
+                            rx.foreach(
+                                DocumentsState.documents,
+                                lambda doc, index: document_row(doc, index),
+                            )
+                        ),
+                        class_name="w-full table-auto border-collapse",
+                    ),
+                    class_name="w-full overflow-x-auto",
+                ),
+            ),
         ),
         rx.el.div(
             rx.el.p(
