@@ -15,6 +15,9 @@ frontend-offline/
 ├── bun/
 │   ├── bun-windows-x64.zip                        # Bun 1.3.14 실행 파일 (Windows)
 │   └── bun-linux-x64.zip                          # Bun 1.3.14 실행 파일 (Linux)
+├── node/
+│   ├── node-v22.23.2-win-x64.zip                  # Node.js 22.23.2 (Windows, Reflex 최소 요구 22.22.0 충족)
+│   └── node-v22.23.2-linux-x64.tar.xz              # Node.js 22.23.2 (Linux)
 ├── node_modules-win-x64.tar.gz                    # Windows용 node_modules
 ├── node_modules-linux-x64.tar.gz                  # Linux용 node_modules (WSL Ubuntu 22.04에서 실제 실행 검증)
 ├── npm-cache-win.tar.gz                           # ★ npm 오프라인 캐시 (Windows) — 실제 크래시 재현 후 이걸로 해결 확인
@@ -97,7 +100,24 @@ C:\bun\bun.exe --version
 
 > 편의상 `bun`을 시스템 PATH에도 등록해두면 터미널에서 바로 `bun ...` 명령을 쓸 수 있지만, Reflex 자체는 `rxconfig.py`의 고정 경로만 봅니다.
 
-**★ 중요:** ③의 설치 캐시가 유효하려면 이 고정 경로의 Bun **뿐 아니라 npm(Node.js에 내장)도 동시에 정상적으로 PATH에서 잡혀야** 합니다. 캐시 마커의 fingerprint에는 "감지된 패키지 매니저 목록"이 그대로 들어가는데, 이 목록이 빌드 시점과 다르면(예: npm이 하나라도 안 잡히면) 조각 하나 차이로 캐시가 무효화되고 `npm install`이 진짜로 실행되면서 오프라인 환경에서 크래시합니다. Node.js를 설치한 직후라면 **새 터미널**(또는 재로그인)에서 `node -v`와 `npm -v`가 정상 출력되는지 먼저 확인하세요.
+**★ 중요:** ③의 설치 캐시가 유효하려면 이 고정 경로의 Bun **뿐 아니라 npm(Node.js에 내장)도 동시에 정상적으로 PATH에서 잡혀야** 합니다 (안 맞아도 npm 캐시 안전망이 있어서 결국 동작은 하지만, 아래 Node 버전 요구사항은 필수입니다).
+
+### Node.js 버전 요구사항 (필수, 22.22.0 이상)
+
+Reflex가 `REFLEX_USE_NPM=1`일 때 **Node 22.22.0 미만이면 아예 실행을 거부**합니다. 서버에 이미 다른 버전의 Node가 깔려있어도 **시스템 Node를 건드리지 않고, 이 프로젝트를 실행할 때만** 새 버전을 앞에 끼워 넣을 수 있습니다:
+
+```powershell
+# Windows — 압축만 풀어두면 됨 (설치 아님, 기존 Node와 별개로 존재)
+Expand-Archive frontend-offline\node\node-v22.23.2-win-x64.zip -DestinationPath C:\node22
+```
+
+```bash
+# Linux — 압축만 풀어두면 됨
+mkdir -p ~/node22
+tar -xf frontend-offline/node/node-v22.23.2-linux-x64.tar.xz -C ~/node22 --strip-components=1
+```
+
+이걸 실제로 PATH 맨 앞에 넣어서 기존 Node보다 먼저 잡히게 하는 건 ④의 실행 스크립트가 자동으로 해줍니다 — 손으로 매번 설정할 필요 없습니다.
 
 ---
 
@@ -136,41 +156,32 @@ ls .web/package-lock.json                          # 있어야 함
 
 ---
 
-## ④ Node.js/npm으로 실행 (★ Bun으로 직접 실행하면 안 됨)
+## ④ 실행 (Bun으로 직접 실행하면 안 됨 — 래퍼 스크립트 사용)
 
-`.web/node_modules/@react-router/dev`(react-router 8.3.0)를 **Bun으로 직접 실행하면 (Windows에서) 자체 재시작 로직 버그로 크래시**합니다 (`restartWithMergedOptions() ... This is likely a bug in @react-router/dev.`). Bun은 위 ③의 설치 캐시를 유효하게 만들기 위해서만 필요하고, **실제 프런트엔드 서버 실행은 npm(Node.js)으로 해야** 합니다. (Linux/WSL에서는 이 버그가 재현되지 않았지만, 캐시 마커 자체가 `REFLEX_USE_NPM=1` 상태로 만들어졌으니 Linux에서도 그대로 설정하고 실행하세요.)
+`.web/node_modules/@react-router/dev`(react-router 8.3.0)를 **Bun으로 직접 실행하면 (Windows에서) 자체 재시작 로직 버그로 크래시**합니다 (`restartWithMergedOptions() ... This is likely a bug in @react-router/dev.`). Bun은 위 ③의 설치 캐시를 유효하게 만들기 위해서만 필요하고, **실제 프런트엔드 서버 실행은 npm(Node.js)으로 해야** 합니다.
 
-내부망 서버에 **Node.js 22 이상**이 이미 있다고 하셨으니, 실행 전에 아래 환경변수를 설정합니다:
+매번 PATH·환경변수를 손으로 설정하지 않도록, 필요한 걸 전부 알아서 세팅해주는 래퍼 스크립트를 프로젝트 루트에 준비해뒀습니다 (`run-offline.ps1` / `run-offline.sh`). **이것만 실행하면 됩니다:**
+
+```powershell
+# Windows
+.\run-offline.ps1
+```
 
 ```bash
 # Linux
-export REFLEX_USE_NPM=1
-export NPM_CONFIG_OFFLINE=true
-export NPM_CONFIG_AUDIT=false
-export NPM_CONFIG_FUND=false
-export NPM_CONFIG_CACHE=~/linux-cache
-
-# Windows (PowerShell)
-$env:REFLEX_USE_NPM = "1"
-$env:NPM_CONFIG_OFFLINE = "true"
-$env:NPM_CONFIG_AUDIT = "false"
-$env:NPM_CONFIG_FUND = "false"
-$env:NPM_CONFIG_CACHE = "C:\npm-cache\win-cache"
+chmod +x run-offline.sh   # 최초 1회
+./run-offline.sh
 ```
 
-- `REFLEX_USE_NPM`: 프런트엔드 실행을 Bun 대신 npm(Node.js)이 하도록 강제 (위 버그 회피)
-- `NPM_CONFIG_OFFLINE`: npm이 어떤 이유로든 네트워크에 접속하지 못하게 원천 차단
-- `NPM_CONFIG_AUDIT` / `NPM_CONFIG_FUND`: 설치 후 자동으로 시도하는 취약점 감사·후원 안내도 네트워크가 필요해서 꺼둠
-- `NPM_CONFIG_CACHE`: **핵심.** ③에서 풀어둔 npm 오프라인 캐시를 가리킴 — 마커가 깨져서 `npm install`이 실제로 실행돼도 이 캐시 안에 필요한 모든 패키지 정보(full/corgi 두 형식 다)가 있어서 네트워크 없이 성공함. 경로가 틀리면 이 안전망 자체가 무력화되니 ③에서 압축을 푼 실제 경로와 정확히 일치하는지 확인
+이 스크립트가 하는 일:
+- Node 22.23.2(②에서 압축 해제한 `C:\node22` / `~/node22`)와 Bun을 이번 실행에만 PATH 맨 앞에 끼워 넣음 (시스템 PATH·다른 프로그램은 그대로)
+- `REFLEX_USE_NPM=1`, `NPM_CONFIG_OFFLINE=true`, `NPM_CONFIG_AUDIT=false`, `NPM_CONFIG_FUND=false`, `NPM_CONFIG_CACHE=<③에서 푼 npm 캐시 경로>` 설정
+- 마지막에 `python -m reflex run` 실행 (인자를 그대로 넘기므로 `.\run-offline.ps1 --loglevel debug`처럼 옵션 추가 가능)
 
-```bash
-python -m reflex run
-```
+스크립트 맨 위 변수(`$PythonCmd`, `$NodeDir`, `$BunDir`, `$NpmCacheDir` / `PYTHON_CMD`, `BUN_DIR`, `NPM_CACHE_DIR`)가 실제로 압축을 푼 경로와 다르면 그 부분만 고쳐서 쓰면 됩니다.
 
 - 프론트엔드: `http://<서버IP>:3000`
 - 백엔드: `http://<서버IP>:8000`
-
-매번 설정하기 번거로우면 시스템 환경변수로 위 4개를 영구 등록해두는 것을 권장합니다.
 
 ---
 
@@ -188,7 +199,8 @@ python -m reflex run
 | `npm error code ENOTCACHED` / `cache mode is 'only-if-cached' but no cached response is available` | 캐시 마커 fingerprint가 이 서버와 안 맞아서 `npm install`이 진짜로 실행됨. `NPM_CONFIG_CACHE`가 ③에서 실제로 압축을 푼 경로(`C:\npm-cache\win-cache` / `~/linux-cache`)를 정확히 가리키는지 확인 — `npm config get cache`로 실제 적용된 값을 볼 수 있음. 경로가 맞는데도 계속 나면 `frontend-offline/package.win.json`(또는 `.linux.json`)의 dependencies/devDependencies 중 npm 캐시에 없는 패키지가 있다는 뜻이니 알려주세요 |
 | Windows에서 `OSError: [WinError 1314] 클라이언트가 필요한 권한을 가지고 있지 않습니다` (symlink 관련) | Windows가 심볼릭 링크 생성 권한을 요구함. 설정 → 개발자 모드를 켜거나, 관리자 권한으로 터미널을 실행 |
 | `error: restartWithMergedOptions() was called, but the process has already been restarted. This is likely a bug in @react-router/dev.` | Bun으로 프런트엔드를 직접 실행해서 생기는 버그. ④처럼 `REFLEX_USE_NPM=1`을 설정하고 Node.js(22+)로 실행할 것 |
-| `Your version (20.x) of Node.js is out of date. Upgrade to 22.22.0 or higher.` | `node --version`으로 확인 후 Node.js 22 LTS로 업그레이드 |
+| `Your version (20.x) of Node.js is out of date. Upgrade to 22.22.0 or higher.` (경고만, 계속 진행됨) | 오래된 Node 경고. `Reflex requires...` 에러와 달리 즉시 죽지는 않지만 결국 아래 항목처럼 실패하니 미리 업그레이드 권장 |
+| `Reflex requires node version 22.22.0 or higher to run, but the detected version is X.X.X` 뜨고 조용히 종료됨(멈춘 것처럼 보임) | `REFLEX_USE_NPM=1`일 때 Node 22.22.0 미만이면 하드 실패(`SystemExit(1)`) — 화면이 안 멈춘 거고 그냥 끝난 것. `run-offline.ps1`/`run-offline.sh`를 쓰면 ②에서 받은 Node 22.23.2가 자동으로 먼저 잡혀서 해결됨 |
 | PowerShell `(Get-ChildItem .web/node_modules).Count`가 bash `ls \| wc -l`보다 훨씬 큼 | 정상 — PowerShell은 점(`.`)으로 시작하는 폴더(`.bin` 등)도 세지만 bash `ls`는 기본적으로 숨김. 실제 내용물 문제 아님 |
 
 ## 참고
