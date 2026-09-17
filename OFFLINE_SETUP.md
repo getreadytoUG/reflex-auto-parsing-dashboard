@@ -160,25 +160,24 @@ ls .web/package-lock.json                          # 있어야 함
 
 `.web/node_modules/@react-router/dev`(react-router 8.3.0)를 **Bun으로 직접 실행하면 (Windows에서) 자체 재시작 로직 버그로 크래시**합니다 (`restartWithMergedOptions() ... This is likely a bug in @react-router/dev.`). Bun은 위 ③의 설치 캐시를 유효하게 만들기 위해서만 필요하고, **실제 프런트엔드 서버 실행은 npm(Node.js)으로 해야** 합니다.
 
-매번 PATH·환경변수를 손으로 설정하지 않도록, 필요한 걸 전부 알아서 세팅해주는 래퍼 스크립트를 프로젝트 루트에 준비해뒀습니다 (`run-offline.ps1` / `run-offline.sh`). **이것만 실행하면 됩니다:**
+매번 PATH·환경변수를 손으로 설정하지 않도록, 필요한 걸 전부 알아서 세팅해주는 래퍼를 프로젝트 루트에 준비해뒀습니다: **`run_offline.py`** (Windows/Linux 공용 — PowerShell 실행 정책 때문에 `.ps1`은 막히는 환경이 있어서 순수 파이썬으로 만들었습니다). **이것만 실행하면 됩니다:**
 
 ```powershell
 # Windows
-.\run-offline.ps1
+py -3.11 run_offline.py
 ```
 
 ```bash
 # Linux
-chmod +x run-offline.sh   # 최초 1회
-./run-offline.sh
+python3.11 run_offline.py
 ```
 
 이 스크립트가 하는 일:
-- Node 22.23.2(②에서 압축 해제한 `C:\node22` / `~/node22`)와 Bun을 이번 실행에만 PATH 맨 앞에 끼워 넣음 (시스템 PATH·다른 프로그램은 그대로)
+- Node 22.23.2(②에서 압축 해제한 `C:\node22\node-v22.23.2-win-x64` / `~/node22`)와 Bun을 이번 실행에만 PATH 맨 앞에 끼워 넣음 (시스템 PATH·다른 프로그램은 그대로)
 - `REFLEX_USE_NPM=1`, `NPM_CONFIG_OFFLINE=true`, `NPM_CONFIG_AUDIT=false`, `NPM_CONFIG_FUND=false`, `NPM_CONFIG_CACHE=<③에서 푼 npm 캐시 경로>` 설정
-- 마지막에 `python -m reflex run` 실행 (인자를 그대로 넘기므로 `.\run-offline.ps1 --loglevel debug`처럼 옵션 추가 가능)
+- 마지막에 `python -m reflex run` 실행 (인자를 그대로 넘기므로 `py -3.11 run_offline.py --loglevel debug`처럼 옵션 추가 가능)
 
-스크립트 맨 위 변수(`$PythonCmd`, `$NodeDir`, `$BunDir`, `$NpmCacheDir` / `PYTHON_CMD`, `BUN_DIR`, `NPM_CACHE_DIR`)가 실제로 압축을 푼 경로와 다르면 그 부분만 고쳐서 쓰면 됩니다.
+파일 맨 위 `NODE_DIR` / `BUN_DIR` / `NPM_CACHE_DIR` 변수가 실제로 압축을 푼 경로와 다르면 그 부분만 고쳐서 쓰면 됩니다 (OS는 자동 감지).
 
 - 프론트엔드: `http://<서버IP>:3000`
 - 백엔드: `http://<서버IP>:8000`
@@ -200,7 +199,8 @@ chmod +x run-offline.sh   # 최초 1회
 | Windows에서 `OSError: [WinError 1314] 클라이언트가 필요한 권한을 가지고 있지 않습니다` (symlink 관련) | Windows가 심볼릭 링크 생성 권한을 요구함. 설정 → 개발자 모드를 켜거나, 관리자 권한으로 터미널을 실행 |
 | `error: restartWithMergedOptions() was called, but the process has already been restarted. This is likely a bug in @react-router/dev.` | Bun으로 프런트엔드를 직접 실행해서 생기는 버그. ④처럼 `REFLEX_USE_NPM=1`을 설정하고 Node.js(22+)로 실행할 것 |
 | `Your version (20.x) of Node.js is out of date. Upgrade to 22.22.0 or higher.` (경고만, 계속 진행됨) | 오래된 Node 경고. `Reflex requires...` 에러와 달리 즉시 죽지는 않지만 결국 아래 항목처럼 실패하니 미리 업그레이드 권장 |
-| `Reflex requires node version 22.22.0 or higher to run, but the detected version is X.X.X` 뜨고 조용히 종료됨(멈춘 것처럼 보임) | `REFLEX_USE_NPM=1`일 때 Node 22.22.0 미만이면 하드 실패(`SystemExit(1)`) — 화면이 안 멈춘 거고 그냥 끝난 것. `run-offline.ps1`/`run-offline.sh`를 쓰면 ②에서 받은 Node 22.23.2가 자동으로 먼저 잡혀서 해결됨 |
+| `Reflex requires node version 22.22.0 or higher to run, but the detected version is X.X.X` 뜨고 조용히 종료됨(멈춘 것처럼 보임) | `REFLEX_USE_NPM=1`일 때 Node 22.22.0 미만이면 하드 실패(`SystemExit(1)`) — 화면이 안 멈춘 거고 그냥 끝난 것. `run_offline.py`를 쓰면 ②에서 받은 Node 22.23.2가 자동으로 먼저 잡혀서 해결됨 |
+| PowerShell에서 `.ps1 실행할 수 없습니다` (실행 정책) | 보안 정책으로 `.ps1` 스크립트가 막힌 환경. `run_offline.py`(순수 파이썬)를 대신 사용 |
 | PowerShell `(Get-ChildItem .web/node_modules).Count`가 bash `ls \| wc -l`보다 훨씬 큼 | 정상 — PowerShell은 점(`.`)으로 시작하는 폴더(`.bin` 등)도 세지만 bash `ls`는 기본적으로 숨김. 실제 내용물 문제 아님 |
 
 ## 참고
