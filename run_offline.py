@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import platform
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -56,17 +57,22 @@ def main() -> int:
     env["NPM_CONFIG_FUND"] = "false"
     env["NPM_CONFIG_CACHE"] = str(NPM_CACHE_DIR)
 
-    def version_of(cmd: list[str]) -> str:
+    def version_of(name: str, arg: str) -> str:
+        # Windows resolves a bare executable name for a new process using the
+        # CALLING process's own PATH, not the `env` we're about to hand the
+        # child -- so resolve the full path ourselves against our modified
+        # PATH first, instead of letting subprocess/CreateProcess guess.
+        resolved = shutil.which(name, path=env["PATH"])
+        if not resolved:
+            return "(못 찾음)"
         try:
             return subprocess.run(
-                cmd, env=env, capture_output=True, text=True, timeout=10
+                [resolved, arg], capture_output=True, text=True, timeout=10
             ).stdout.strip()
         except Exception:
             return "(확인 불가)"
 
-    node_exe = "node.exe" if IS_WINDOWS else "node"
-    bun_exe = "bun.exe" if IS_WINDOWS else "bun"
-    print(f"node: {version_of([node_exe, '-v'])}   bun: {version_of([str(BUN_DIR / bun_exe), '--version'])}")
+    print(f"node: {version_of('node', '-v')}   bun: {version_of('bun', '--version')}")
 
     return subprocess.run(
         [sys.executable, "-m", "reflex", "run", *sys.argv[1:]], env=env
