@@ -13,15 +13,17 @@ wheelhouse/
 
 frontend-offline/
 ├── bun/
-│   ├── bun-windows-x64.zip       # Bun 1.3.14 실행 파일 (Windows)
-│   └── bun-linux-x64.zip         # Bun 1.3.14 실행 파일 (Linux)
-├── node_modules-win-x64.tar.gz              # bun install 결과 (Windows용, 실제 성공 실행으로 검증됨)
-├── node_modules-linux-x64.tar.gz            # bun install --os=linux --cpu=x64 결과 (Linux용 — 아직 실제 실행 검증 전)
-├── reflex.install_frontend_packages.cached  # 설치 성공 캐시 마커 (Windows 기준, ③에서 설명)
-├── package.json / bun.lock / bunfig.toml
+│   ├── bun-windows-x64.zip                        # Bun 1.3.14 실행 파일 (Windows)
+│   └── bun-linux-x64.zip                          # Bun 1.3.14 실행 파일 (Linux)
+├── node_modules-win-x64.tar.gz                    # Windows용 node_modules
+├── node_modules-linux-x64.tar.gz                  # Linux용 node_modules (WSL Ubuntu 22.04에서 실제 실행 검증)
+├── reflex.install_frontend_packages.cached.win    # 설치 성공 캐시 마커 (Windows)
+├── reflex.install_frontend_packages.cached.linux  # 설치 성공 캐시 마커 (Linux)
+├── package.win.json / package.linux.json          # 참고용 — 실제 실행 후 각 OS가 기록한 package.json (배치 시 안 씀)
+├── bun.lock / bunfig.toml                          # 두 OS 공통
 ```
 
-대상 서버의 OS에 맞는 세트(`win` 또는 `linux`)를 사용합니다. **Windows 세트는 실제로 내부망과 동일한 조건(오프라인 node_modules + 캐시 마커 + `REFLEX_USE_NPM=1`)으로 끝까지 실행 성공을 확인했습니다.** Linux 세트는 아직 실제 실행 검증 전이라, 안 되면 알려주세요 — 캐시 마커를 Linux용으로 새로 만들어야 합니다.
+대상 서버의 OS에 맞는 세트(`win` 또는 `linux`)를 사용합니다. **두 세트 모두 오프라인 조건(node_modules + 캐시 마커 + `REFLEX_USE_NPM=1`)을 그대로 재현해서 `reflex run`이 `App running at: http://localhost:3000/`까지 뜨는 걸 실제로 확인했습니다** (Windows는 이 PC에서, Linux는 같은 PC의 WSL Ubuntu 22.04에서 검증).
 
 ---
 
@@ -96,19 +98,18 @@ C:\bun\bun.exe --version
 
 Reflex는 `reflex run`을 실행할 때마다 자체 프레임워크 패키지(react, sonner, radix-ui 등)를 `bun add <이름>@<고정버전>`으로 **매번 다시 검증**합니다. `bun add`는 항상 npm 레지스트리에 접속하려고 시도하기 때문에, `node_modules`가 이미 채워져 있어도 인터넷이 없으면 `Connection Refused downloading package manifest ...` 에러가 납니다.
 
-이 단계는 **한 번 성공하면** `.web/reflex.install_frontend_packages.cached`라는 마커 파일에 결과가 캐시되고, 이후 실행부터는 완전히 스킵됩니다(네트워크 재시도 없음). **이 프로젝트를 준비한 PC에서 이미 한 번 성공시켜뒀고, 그 결과물이 `frontend-offline/`에 포함되어 있습니다** — 오프라인 서버는 아래처럼 그 결과물을 그대로 풀어 넣기만 하면 됩니다.
+이 단계는 **한 번 성공하면** `.web/reflex.install_frontend_packages.cached`라는 마커 파일에 결과가 캐시되고, 이후 실행부터는 완전히 스킵됩니다(네트워크 재시도 없음). **이 프로젝트를 준비하면서 Windows(이 PC)와 Linux(WSL Ubuntu 22.04) 양쪽에서 이미 한 번씩 성공시켜뒀고, 그 결과물이 `frontend-offline/`에 포함되어 있습니다** — 오프라인 서버는 아래처럼 자기 OS에 맞는 결과물을 그대로 풀어 넣기만 하면 됩니다.
 
 ```bash
-python -m reflex init          # .web/ 폴더 생성 (bun install은 자동 실행되지 않을 수 있음)
+python -m reflex init          # .web/ 폴더 생성 (reflex.lock/에서 package.json·bun.lock 복원)
 
 # Linux
 tar -xzf frontend-offline/node_modules-linux-x64.tar.gz -C .web/
+cp frontend-offline/reflex.install_frontend_packages.cached.linux .web/reflex.install_frontend_packages.cached
 
 # Windows (PowerShell)
 tar -xzf frontend-offline\node_modules-win-x64.tar.gz -C .web\
-
-# 캐시 마커도 함께 복사 (Windows/Linux 공통 파일명)
-cp frontend-offline/reflex.install_frontend_packages.cached .web/
+Copy-Item frontend-offline\reflex.install_frontend_packages.cached.win .web\reflex.install_frontend_packages.cached
 ```
 
 풀어놓은 뒤 확인:
@@ -126,7 +127,7 @@ ls .web/reflex.install_frontend_packages.cached    # 있어야 함
 
 ## ④ Node.js/npm으로 실행 (★ Bun으로 직접 실행하면 안 됨)
 
-`.web/node_modules/@react-router/dev`(react-router 8.3.0)를 **Bun으로 직접 실행하면 자체 재시작 로직 버그로 크래시**합니다 (`restartWithMergedOptions() ... This is likely a bug in @react-router/dev.`). Bun은 위 ③의 설치 캐시를 유효하게 만들기 위해서만 필요하고, **실제 프런트엔드 서버 실행은 npm(Node.js)으로 해야** 합니다.
+`.web/node_modules/@react-router/dev`(react-router 8.3.0)를 **Bun으로 직접 실행하면 (Windows에서) 자체 재시작 로직 버그로 크래시**합니다 (`restartWithMergedOptions() ... This is likely a bug in @react-router/dev.`). Bun은 위 ③의 설치 캐시를 유효하게 만들기 위해서만 필요하고, **실제 프런트엔드 서버 실행은 npm(Node.js)으로 해야** 합니다. (Linux/WSL에서는 이 버그가 재현되지 않았지만, 캐시 마커 자체가 `REFLEX_USE_NPM=1` 상태로 만들어졌으니 Linux에서도 그대로 설정하고 실행하세요.)
 
 내부망 서버에 **Node.js 22 이상**이 이미 있다고 하셨으니, 실행 전에 아래 환경변수만 설정하면 됩니다:
 
