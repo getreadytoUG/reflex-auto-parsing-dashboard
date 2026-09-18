@@ -50,8 +50,12 @@
 
 ## 4. Job 실행 / Worker 분리 (Parsing Jobs 페이지)
 
-- [app/states/jobs_state.py:32-34](app/states/jobs_state.py)의 `auto_refresh_label`, `last_refreshed_at`, `next_refresh_at`이 고정 문자열이며 실제 타이머/폴링이 없습니다.
-- `jobs` 리스트 전체([jobs_state.py:55-216](app/states/jobs_state.py))가 진행률·현재 페이지·오류 메시지가 모두 하드코딩된 샘플입니다. 실제 Job이 생성/갱신되는 코드가 없습니다.
+**2026-09-18 갱신: 아래 항목 중 Jobs 페이지의 요약/목록 조회 호출 배관까지는 실연동되었습니다.**
+
+- ✅ `JobsState.load_jobs`/`set_status_filter`가 더 이상 하드코딩된 샘플을 쓰지 않고 [app/services/jobs_service.py](app/services/jobs_service.py)의 `fetch_job_summary()`/`fetch_jobs()`를 실제로 호출합니다 — 페이지 진입 시와 상태 필터 클릭 시 모두 ([app/states/jobs_state.py](app/states/jobs_state.py)의 `load_jobs`). 요약과 목록 각각 독립적인 에러 배너(`summary_error`, `jobs_error`)로 정직하게 실패를 보여주며, 이 페이지 어디에도 더 이상 하드코딩된 목업 데이터가 없습니다.
+- ⛔ 다만 `jobs_service.py`의 두 함수는 여전히 스텁입니다 — 실제 내부망 `API_BASE_URL`의 Job 큐 엔드포인트 스펙이 아직 확정되지 않아 항상 `NotImplementedError`를 던지도록 되어 있습니다.
+- ⛔ 실시간 폴링/자동 갱신 루프는 아직 없습니다 (스펙상 이번 범위에서 의도적으로 제외) — [app/states/jobs_state.py](app/states/jobs_state.py)의 `auto_refresh_label`이 가짜 5초 주기를 주장하는 대신 "자동 갱신 대기 (Job API 연동 전)"로 정직하게 표시하도록 이미 바뀌어 있습니다.
+- ⛔ Job 카드의 "로그"/"재시도"/"Validation 이동" 버튼은 여전히 클릭 이벤트가 연결되어 있지 않습니다 ([app/components/job_queue.py](app/components/job_queue.py)) — Documents 페이지의 대응되는 행 액션 버튼들과 마찬가지로 이번 범위 밖입니다.
 - 요구사항상 Parser 실행은 Reflex 이벤트 루프를 막지 않는 별도 Worker에서 돌아야 합니다 ([REFLEX_AI_BUILDER.md:45-51, 423-453](REFLEX_AI_BUILDER.md)). 현재는 UI와 분리된 Worker/Queue 코드가 전혀 없습니다.
 - [settings_state.py:83-86](app/states/settings_state.py)에도 현재 실행 방식이 `"In-process (동기)"`로 명시되어 있어, Reflex 이벤트 내에서 동기 실행하면 UI가 멈추는 구조임을 스스로 경고하고 있습니다.
 - 필요한 작업:
@@ -60,6 +64,7 @@
   3. `JobsState`에 `rx.event(background=True)` 또는 `yield`로 주기 폴링하는 이벤트를 추가해 3초 간격으로 `ProgressSnapshot`을 가져와 `jobs` 리스트를 갱신 ([settings_state.py:113-117](app/states/settings_state.py)에 명시된 "진행률 폴링 주기: 3초" 반영).
   4. Documents 페이지의 "파싱 실행" 버튼(3번 항목) → `job_service.submit()` 호출로 연결.
   5. **2026-09-18 추가**: 이 기능이 붙으면 Job 시작/완료 시점에 [app/services/job_log_service.py](app/services/job_log_service.py)의 `append_job_event()`도 함께 호출해야 한다 — Dashboard의 "최근 Job"/"Parser별 처리량"/"평균 파싱 시간"이 이 로그를 읽어 집계하는데, 현재는 아무도 호출하지 않아 항상 빈 상태다 (7번 항목 참고).
+  6. **2026-09-18 추가**: `jobs_service.py`의 `fetch_job_summary()`/`fetch_jobs()`가 실제 구현으로 채워지면, 위 1~3번 항목(Job 생성/조회/취소, 진행률 폴링)이 바로 이어서 진행 가능한 상태가 된다 — 페이지 쪽 호출 배관은 이미 완료되어 있다.
 
 ## 5. Validation / 구조 편집 (가장 핵심 화면, 현재 전부 시각화 전용)
 

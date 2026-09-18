@@ -35,17 +35,32 @@ def summary_tile(item: JobSummary) -> rx.Component:
 
 
 def summary_row() -> rx.Component:
-    return rx.el.div(
-        rx.foreach(JobsState.summary, summary_tile),
-        class_name="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6",
+    return rx.cond(
+        JobsState.jobs_loading,
+        rx.el.div(
+            "요약을 불러오는 중...",
+            class_name="w-full p-6 text-center text-[12px] text-stone-500",
+        ),
+        rx.cond(
+            JobsState.summary_error != "",
+            rx.el.div(
+                JobsState.summary_error,
+                class_name="w-full p-6 text-center text-[12px] font-semibold text-red-600",
+            ),
+            rx.el.div(
+                rx.foreach(JobsState.summary, summary_tile),
+                class_name="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6",
+            ),
+        ),
     )
 
 
 def status_filter_chip(label: str) -> rx.Component:
     return rx.el.button(
         label,
+        on_click=lambda: JobsState.set_status_filter(label),
         class_name=rx.cond(
-            label == "전체",
+            JobsState.selected_status_filter == label,
             "border border-[#151d2c] bg-[#151d2c] px-2.5 py-1 text-[11px] font-semibold text-white",
             "border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-600 transition-colors hover:bg-stone-100",
         ),
@@ -258,22 +273,31 @@ def job_list() -> rx.Component:
                     class_name="text-[13px] font-bold tracking-tight text-stone-900",
                 ),
                 rx.el.p(
-                    "진행률 · 현재 단계 · 오류 메시지 · 결과 경로 (목업 데이터, 자동 갱신 없음)",
+                    "진행률 · 현재 단계 · 오류 메시지 · 결과 경로",
                     class_name="text-[11px] text-stone-500",
                 ),
             ),
-            rx.el.span(
-                rx.icon("info", class_name="h-3 w-3"),
-                "표시된 수치는 고정 스냅샷",
-                class_name="flex w-fit items-center gap-1 border border-stone-300 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-stone-500",
-            ),
             class_name="flex flex-wrap items-center justify-between gap-2",
         ),
-        rx.el.div(
-            rx.foreach(
-                JobsState.jobs, lambda job: job_card(job, key=job["id"])
+        rx.cond(
+            JobsState.jobs_loading,
+            rx.el.div(
+                "Job 목록을 불러오는 중...",
+                class_name="mt-2.5 p-6 text-center text-[12px] text-stone-500",
             ),
-            class_name="mt-2.5 flex w-full flex-col gap-2.5",
+            rx.cond(
+                JobsState.jobs_error != "",
+                rx.el.div(
+                    JobsState.jobs_error,
+                    class_name="mt-2.5 p-6 text-center text-[12px] font-semibold text-red-600",
+                ),
+                rx.el.div(
+                    rx.foreach(
+                        JobsState.jobs, lambda job: job_card(job, key=job["id"])
+                    ),
+                    class_name="mt-2.5 flex w-full flex-col gap-2.5",
+                ),
+            ),
         ),
         class_name="w-full min-w-0",
     )
