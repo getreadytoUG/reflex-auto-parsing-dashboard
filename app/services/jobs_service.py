@@ -28,3 +28,12 @@ async def fetch_jobs(status_filter: str | None = None) -> list[dict]:
     맞춰야 한다.
     """
     raise NotImplementedError("API_BASE_URL Job 목록 연동 대기 — API 스펙 확정 후 구현")
+
+
+async def submit_reparse_job(document_id: str, parser_name: str) -> dict:
+    """API_BASE_URL에 재파싱 Job을 제출한다.
+
+    TODO: 실제 API 스펙 확정되면 구현. 반환 형태는 Job 제출 영수증
+    (job_id 등)이어야 한다.
+    """
+    raise NotImplementedError("API_BASE_URL Job 제출 연동 대기 — API 스펙 확정 후 구현")

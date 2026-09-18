@@ -6,7 +6,7 @@ State/컴포넌트에서 import는 하되, rx.State를 import하지 않는 순�
 
 from __future__ import annotations
 
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
 
 from app import config
 
@@ -98,3 +98,65 @@ async def aggregate_document_stats() -> dict:
         "status_counts": status_counts,
         "file_type_counts": file_type_counts,
     }
+
+
+_CHUNK_PAYLOAD_FIELD_MAP: dict[str, str] = {
+    "document_id": "document_id",  # CHILD_COLLECTION에서 부모 문서를 가리키는 필드명 — 실제 스키마 확인 전 플레이스홀더
+    "block_id": "block_id",
+    "kind": "kind",          # heading/paragraph/list/table/caption/footnote 중 하나로 가정
+    "text": "text",
+    "page": "page",
+    "order": "order",         # 문서 내 순서 — 정렬 기준
+    "level": "level",         # heading일 때만 의미 있음 (1/2/3...)
+    "confidence": "confidence",
+}
+
+_CHUNK_DEFAULTS: dict[str, object] = {
+    "block_id": "-",
+    "kind": "paragraph",
+    "text": "",
+    "page": "-",
+    "order": 0,
+    "level": 1,
+    "confidence": "-",
+}
+
+
+async def fetch_document_chunks(document_id: str) -> list[dict]:
+    """CHILD_COLLECTION에서 특정 문서의 청크를 조회해 order 기준으로 정렬한 뒤 반환한다.
+
+    실패(네트워크 에러, 컬렉션 없음 등) 시 예외를 그대로 올린다 — 호출부(State)가
+    잡아서 에러 상태를 표시한다 (fetch_documents()와 동일 원칙).
+    """
+    if not config.CHILD_COLLECTION:
+        raise RuntimeError("CHILD_COLLECTION 환경변수가 설정되어 있지 않습니다.")
+
+    client = get_client()
+    points, _next_offset = await client.scroll(
+        collection_name=config.CHILD_COLLECTION,
+        scroll_filter=models.Filter(
+            must=[
+                models.FieldCondition(
+                    key=_CHUNK_PAYLOAD_FIELD_MAP["document_id"],
+                    match=models.MatchValue(value=document_id),
+                )
+            ]
+        ),
+        limit=1000,
+        with_payload=True,
+        with_vectors=False,
+    )
+
+    chunks: list[dict] = []
+    for point in points:
+        payload = point.payload or {}
+        chunk = {
+            row_key: payload.get(payload_key, _CHUNK_DEFAULTS[row_key])
+            for payload_key, row_key in _CHUNK_PAYLOAD_FIELD_MAP.items()
+            if row_key != "document_id"
+        }
+        chunk["block_id"] = chunk["block_id"] if chunk["block_id"] != "-" else str(point.id)
+        chunks.append(chunk)
+
+    chunks.sort(key=lambda c: (c["order"] if isinstance(c["order"], (int, float)) else 0))
+    return chunks
