@@ -3,6 +3,8 @@ from typing import TypedDict
 import reflex as rx
 import reflex_xy
 
+from app.services.job_log_service import JobLogEvent
+
 
 class KpiItem(TypedDict):
     label: str
@@ -225,3 +227,83 @@ class DashboardState(rx.State):
     @reflex_xy.data
     def parser_data(self) -> dict[str, list[str] | list[int]]:
         return {"parser": self.parsers, "documents": self.parser_throughput}
+
+
+def _build_kpis(stats: dict, avg_duration: float | None) -> list[KpiItem]:
+    status_counts = stats["status_counts"]
+    completed = status_counts.get("Completed", 0)
+    warning = status_counts.get("Warning", 0)
+    failed = status_counts.get("Failed", 0)
+    # "검수 필요"에 대응하는 실제 status 값이 아직 확인되지 않았다 —
+    # Documents 페이지의 상태 값 중 "Warning"을 임시로 재사용한다.
+    # 실제 payload 스키마가 확인되면 이 줄만 고치면 된다.
+    needs_review = status_counts.get("Warning", 0)
+
+    avg_duration_value = "—" if avg_duration is None else f"{avg_duration:.1f}"
+
+    return [
+        {
+            "label": "전체 문서",
+            "value": str(stats["total"]),
+            "unit": "건",
+            "delta": "—",
+            "trend": "down",
+            "icon": "files",
+        },
+        {
+            "label": "파싱 성공",
+            "value": str(completed),
+            "unit": "건",
+            "delta": "—",
+            "trend": "down",
+            "icon": "circle-check",
+        },
+        {
+            "label": "Warning",
+            "value": str(warning),
+            "unit": "건",
+            "delta": "—",
+            "trend": "down",
+            "icon": "triangle-alert",
+        },
+        {
+            "label": "Failed",
+            "value": str(failed),
+            "unit": "건",
+            "delta": "—",
+            "trend": "down",
+            "icon": "circle-x",
+        },
+        {
+            "label": "검수 필요",
+            "value": str(needs_review),
+            "unit": "건",
+            "delta": "—",
+            "trend": "down",
+            "icon": "clipboard-check",
+        },
+        {
+            "label": "평균 파싱 시간",
+            "value": avg_duration_value,
+            "unit": "초/문서",
+            "delta": "—",
+            "trend": "down",
+            "icon": "timer",
+        },
+    ]
+
+
+def _job_event_to_row(event: JobLogEvent) -> JobRow:
+    minutes, seconds = divmod(int(event["duration_seconds"]), 60)
+    duration = f"{minutes}분 {seconds}초" if minutes else f"{seconds}초"
+    return {
+        "id": event["job_id"],
+        "file_name": event["file_name"],
+        "file_type": event["file_type"],
+        "parser": event["parser"],
+        "pages": event["pages"],
+        "duration": duration,
+        "requester": event["requester"],
+        "started_at": event["started_at"],
+        "status": event["status"],
+    }
