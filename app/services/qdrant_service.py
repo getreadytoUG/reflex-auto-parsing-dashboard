@@ -75,3 +75,26 @@ async def fetch_documents(limit: int = 50) -> list[dict]:
         row["id"] = str(point.id)
         rows.append(row)
     return rows
+
+
+async def aggregate_document_stats() -> dict:
+    """PARENT_COLLECTION 전체를 스캔해 문서 수 통계를 집계한다.
+
+    fetch_documents()의 payload 매핑(_PAYLOAD_FIELD_MAP)을 그대로 재사용하므로,
+    실제 payload 스키마가 확인되어 그 매핑을 고치면 여기 집계도 같이 맞는다.
+    문서 수가 10,000건을 넘으면 이 limit을 늘리거나 커서 페이지네이션으로
+    바꿔야 한다 (미해결 사항).
+    """
+    rows = await fetch_documents(limit=10_000)
+    status_counts: dict[str, int] = {}
+    file_type_counts: dict[str, int] = {}
+    for row in rows:
+        status_counts[row["status"]] = status_counts.get(row["status"], 0) + 1
+        file_type_counts[row["file_type"]] = (
+            file_type_counts.get(row["file_type"], 0) + 1
+        )
+    return {
+        "total": len(rows),
+        "status_counts": status_counts,
+        "file_type_counts": file_type_counts,
+    }
