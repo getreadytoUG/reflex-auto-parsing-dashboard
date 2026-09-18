@@ -2,7 +2,7 @@
 
 이 문서는 현재 저장소가 **정적 목업(Mockup)**이며, 실제로 문서를 업로드·파싱·검수·저장하려면 어떤 설정/구현이 추가로 필요한지 파일과 줄 번호 단위로 정리한 것입니다. 배경 설계는 [REFLEX_AI_BUILDER.md](REFLEX_AI_BUILDER.md)를 참고하세요.
 
-전체 상태를 한 문장으로 요약하면: **UI 레이아웃과 타입 계약(`contracts.py`)만 존재하고, 데이터베이스·Parser 구현체·Job Worker·State의 이벤트 핸들러가 전부 비어 있습니다.**
+전체 상태를 한 문장으로 요약하면: **Documents/Dashboard 페이지는 Qdrant 기반으로 실연동되었고(3, 7번 항목), 나머지(Jobs/Validation/Settings)는 아직 UI 레이아웃과 타입 계약(`contracts.py`)만 존재하며 데이터베이스·Parser 구현체·Job Worker·State의 이벤트 핸들러가 비어 있습니다.**
 
 ---
 

@@ -6,6 +6,10 @@
 
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 DRM_BASE_URL = os.getenv("DRM_BASE_URL")
 UPLOAD_BASE_URL = os.getenv("UPLOAD_BASE_URL")
 DELETE_BASE_URL = os.getenv("DELETE_BASE_URL")
