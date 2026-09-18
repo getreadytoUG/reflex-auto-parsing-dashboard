@@ -1,5 +1,6 @@
 
 reflex[db]==0.9.10.post2
 xy[reflex]==0.0.7
-qdrant-client
-langchain-openai
+qdrant-client==1.19.1
+langchain-openai==1.6.2
+async-timeout==5.0.1

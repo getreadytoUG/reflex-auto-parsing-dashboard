@@ -202,10 +202,14 @@ python3.11 run_offline.py
 | `Reflex requires node version 22.22.0 or higher to run, but the detected version is X.X.X` 뜨고 조용히 종료됨(멈춘 것처럼 보임) | `REFLEX_USE_NPM=1`일 때 Node 22.22.0 미만이면 하드 실패(`SystemExit(1)`) — 화면이 안 멈춘 거고 그냥 끝난 것. `run_offline.py`를 쓰면 ②에서 받은 Node 22.23.2가 자동으로 먼저 잡혀서 해결됨 |
 | PowerShell에서 `.ps1 실행할 수 없습니다` (실행 정책) | 보안 정책으로 `.ps1` 스크립트가 막힌 환경. `run_offline.py`(순수 파이썬)를 대신 사용 |
 | PowerShell `(Get-ChildItem .web/node_modules).Count`가 bash `ls \| wc -l`보다 훨씬 큼 | 정상 — PowerShell은 점(`.`)으로 시작하는 폴더(`.bin` 등)도 세지만 bash `ls`는 기본적으로 숨김. 실제 내용물 문제 아님 |
+| `UnicodeDecodeError: 'cp949' codec can't decode byte ...` (`reflex init`/`reflex run` 중, `initialize_agents_md` 근처 traceback) | Reflex가 프로젝트 루트의 `AGENTS.md`를 관리하면서 시스템 기본 인코딩(한글 Windows는 cp949)으로 읽는데, `AGENTS.md`에 UTF-8 문자가 있으면 깨짐. `run_offline.py`가 `PYTHONUTF8=1`을 자동으로 설정해서 이미 우회하고 있음 — 직접 `python -m reflex ...`를 쓸 때만 `PYTHONUTF8=1` 환경변수를 추가로 붙이면 됨 |
+| `ModuleNotFoundError: No module named 'async_timeout'` (`reflex run`/`compile` 시작 직후, `redis.asyncio` import 중) | wheelhouse에 원래 빠져있던 패키지 — `requirements.txt`에 `async-timeout==5.0.1`로 고정되어 있고 wheelhouse에도 포함되어 있음. 이 에러가 다시 뜨면 wheelhouse가 최신이 아닌 것이니 재확인 |
+| `ModuleNotFoundError: No module named 'pexpect'` (Linux에서만, `ipython` import 중) | `ipython`이 Windows에서는 필요 없지만 Linux에서는 `pexpect`를 요구함(환경 마커 차이). `wheelhouse/linux`에 `pexpect`/`ptyprocess`가 포함되어 있어야 함 |
 
 ## 참고
 
 - 이 wheelhouse/frontend-offline은 **Python 3.11 / reflex 0.9.10.post2 / Bun 1.3.14** 기준으로 만들어졌습니다. `requirements.txt`의 버전을 올리면 (특히 `package.json`의 dependencies가 바뀌면) `npm-cache-*.tar.gz`를 포함해 전체 번들을 다시 만들어야 합니다.
+- **2026-09-18 갱신**: Documents 페이지 Qdrant/파싱방법 연동([docs/superpowers/specs/2026-09-17-documents-real-integration-design.md](docs/superpowers/specs/2026-09-17-documents-real-integration-design.md))으로 `requirements.txt`에 `qdrant-client==1.19.1`, `langchain-openai==1.6.2`가 추가되고, `rx.upload` 때문에 프런트엔드에 `react-dropzone`이 추가되어 wheelhouse/frontend-offline 전체를 다시 만들었습니다. 이 과정에서 기존에도 있던 구멍 2개(Linux `pexpect` 누락, win/linux 공통 `async_timeout` 누락)도 같이 발견해서 고쳤습니다 — `requirements.txt`에 `async-timeout==5.0.1`이 새로 고정된 이유입니다.
 - 설치(패키지 검증)는 Bun이 하고, 실행은 npm/Node.js가 하는 **혼합 구조**입니다 — 둘 다 필요합니다. Bun만 있고 Node.js 22가 없다면 ④가 안 됩니다.
 - 이 전체 오프라인 방식은 **완전 차단된 네트워크 환경에서 실제로 재현·검증**했습니다 (`NPM_CONFIG_OFFLINE=true`로 등록된 레지스트리 접속을 강제 차단한 뒤 `App running`까지 확인).
 - 앱 자체의 미구현 부분(DB 연결, Parser 연동 등)은 [TODO.md](TODO.md)를 참고하세요.

@@ -56,6 +56,12 @@ def main() -> int:
     env["NPM_CONFIG_AUDIT"] = "false"
     env["NPM_CONFIG_FUND"] = "false"
     env["NPM_CONFIG_CACHE"] = str(NPM_CACHE_DIR)
+    # Reflex writes/reads an AGENTS.md file in the project root using the
+    # platform's default text encoding. On a non-UTF-8 locale (e.g. Korean
+    # Windows, cp949) that crashes with UnicodeDecodeError the moment
+    # AGENTS.md contains any non-ASCII character. Force UTF-8 regardless of
+    # locale so this can't happen.
+    env["PYTHONUTF8"] = "1"
 
     def version_of(name: str, arg: str) -> str:
         # Windows resolves a bare executable name for a new process using the
