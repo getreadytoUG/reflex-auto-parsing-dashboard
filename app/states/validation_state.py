@@ -3,6 +3,7 @@ from typing import TypedDict
 import reflex as rx
 
 from app.parsers.contracts import BlockKind
+from app.services import jobs_service, qdrant_service
 
 
 class CodeLine(TypedDict):
@@ -52,24 +53,19 @@ class InspectorField(TypedDict):
 
 
 class ValidationState(rx.State):
-    """Validation 목업 전용 정적 상태 (이벤트 연결 없음)."""
+    """Validation 페이지 상태. 문서 선택/탭 전환/블록 조회는 Qdrant CHILD_COLLECTION에서 실제로 조회한다."""
 
-    document_options: list[str] = [
-        "DOC-100482 · 2024년_국가연구개발사업_예산배분안.pdf",
-        "DOC-100478 · 부서별_인사발령_공고문_2024-09.hwpx",
-        "DOC-100474 · 전자문서_보존기간_기준표_개정안.docx",
-        "DOC-100471 · 차세대_행정포털_요구사항_정의서.pptx",
-    ]
+    document_options: list[str] = []
     review_states: list[str] = ["검수 중", "검수 대기", "검수 완료", "반송"]
 
-    document_id: str = "DOC-100482"
-    document_name: str = "2024년_국가연구개발사업_예산배분안.pdf"
-    parser_name: str = "PyMuPDF 1.24.9"
-    parsed_at: str = "2024-09-18 10:42"
-    reviewer: str = "김서연 · 문서운영팀"
-    review_state: str = "검수 중"
-    change_count: int = 7
-    unsaved_changes: bool = True
+    document_id: str = ""
+    document_name: str = ""
+    parser_name: str = ""
+    parsed_at: str = ""
+    reviewer: str = ""
+    review_state: str = ""
+    change_count: int = 0
+    unsaved_changes: bool = False
 
     current_page: int = 12
     total_pages: int = 48
@@ -115,367 +111,11 @@ class ValidationState(rx.State):
         },
     ]
 
-    markdown_lines: list[CodeLine] = [
-        {
-            "no": "041",
-            "text": "## 제3장 예산배분의 기준",
-            "indent": "0",
-            "kind": "heading",
-            "selected": False,
-        },
-        {
-            "no": "042",
-            "text": "",
-            "indent": "0",
-            "kind": "blank",
-            "selected": False,
-        },
-        {
-            "no": "043",
-            "text": "### 제12조(배분 원칙)",
-            "indent": "0",
-            "kind": "heading",
-            "selected": False,
-        },
-        {
-            "no": "044",
-            "text": "① 중앙행정기관의 장은 소관 연구개발사업의 예산을 배분할 때 국가과학기술자문회의의",
-            "indent": "0",
-            "kind": "text",
-            "selected": False,
-        },
-        {
-            "no": "045",
-            "text": "심의 결과와 사업 성과평가 결과를 우선 반영하여야 한다.",
-            "indent": "0",
-            "kind": "text",
-            "selected": False,
-        },
-        {
-            "no": "046",
-            "text": "",
-            "indent": "0",
-            "kind": "blank",
-            "selected": False,
-        },
-        {
-            "no": "047",
-            "text": "### 제13조(중점 투자 분야)",
-            "indent": "0",
-            "kind": "heading",
-            "selected": True,
-        },
-        {
-            "no": "048",
-            "text": "① 중점 투자 분야는 다음 각 호와 같다.",
-            "indent": "0",
-            "kind": "text",
-            "selected": True,
-        },
-        {
-            "no": "049",
-            "text": "1. 인공지능·반도체 등 전략기술 분야",
-            "indent": "1",
-            "kind": "list",
-            "selected": True,
-        },
-        {
-            "no": "050",
-            "text": "2. 감염병 대응 및 공공보건 연구 분야",
-            "indent": "1",
-            "kind": "list",
-            "selected": True,
-        },
-        {
-            "no": "051",
-            "text": "3. 탄소중립 이행 기반 기술 분야",
-            "indent": "1",
-            "kind": "list",
-            "selected": True,
-        },
-        {
-            "no": "052",
-            "text": "",
-            "indent": "0",
-            "kind": "blank",
-            "selected": False,
-        },
-        {
-            "no": "053",
-            "text": "**[표 3] 분야별 투자 증감률 (단위: 억원, %)**",
-            "indent": "0",
-            "kind": "caption",
-            "selected": False,
-        },
-        {
-            "no": "054",
-            "text": "| 분야 | 2023 | 2024 | 증감률 |",
-            "indent": "0",
-            "kind": "table",
-            "selected": False,
-        },
-        {
-            "no": "055",
-            "text": "| --- | ---: | ---: | ---: |",
-            "indent": "0",
-            "kind": "table",
-            "selected": False,
-        },
-        {
-            "no": "056",
-            "text": "| 전략기술 | 24,180 | 29,640 | +22.6 |",
-            "indent": "0",
-            "kind": "table",
-            "selected": False,
-        },
-        {
-            "no": "057",
-            "text": "| 공공보건 | 9,420 | 10,110 | +7.3 |",
-            "indent": "0",
-            "kind": "table",
-            "selected": False,
-        },
-        {
-            "no": "058",
-            "text": "",
-            "indent": "0",
-            "kind": "blank",
-            "selected": False,
-        },
-        {
-            "no": "059",
-            "text": "### 제14조(조정 절차)",
-            "indent": "0",
-            "kind": "heading",
-            "selected": False,
-        },
-        {
-            "no": "060",
-            "text": "예산 조정이 필요한 경우 관계 기관 협의를 거쳐 조정안을 작성한다.",
-            "indent": "0",
-            "kind": "text",
-            "selected": False,
-        },
-    ]
-
-    json_lines: list[CodeLine] = [
-        {
-            "no": "118",
-            "text": "{",
-            "indent": "0",
-            "kind": "punct",
-            "selected": False,
-        },
-        {
-            "no": "119",
-            "text": '"block_id": "BLK-0473",',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "120",
-            "text": '"kind": "heading",',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "121",
-            "text": '"heading_level": 3,',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "122",
-            "text": '"page": 12,',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "123",
-            "text": '"order": 473,',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "124",
-            "text": '"text": "제13조(중점 투자 분야)",',
-            "indent": "1",
-            "kind": "key",
-            "selected": True,
-        },
-        {
-            "no": "125",
-            "text": '"bbox": [72.0, 318.4, 523.6, 336.1],',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "126",
-            "text": '"confidence": 0.91,',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "127",
-            "text": '"parent_block_id": "BLK-0461"',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "128",
-            "text": "},",
-            "indent": "0",
-            "kind": "punct",
-            "selected": False,
-        },
-        {
-            "no": "129",
-            "text": "{",
-            "indent": "0",
-            "kind": "punct",
-            "selected": False,
-        },
-        {
-            "no": "130",
-            "text": '"block_id": "BLK-0474",',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "131",
-            "text": '"kind": "list",',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "132",
-            "text": '"page": 12,',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "133",
-            "text": '"items": ["인공지능·반도체", "공공보건", "탄소중립"]',
-            "indent": "1",
-            "kind": "key",
-            "selected": False,
-        },
-        {
-            "no": "134",
-            "text": "}",
-            "indent": "0",
-            "kind": "punct",
-            "selected": False,
-        },
-    ]
-
-    blocks: list[BlockItem] = [
-        {
-            "block_id": "BLK-0461",
-            "kind": "heading",
-            "label": "H2",
-            "excerpt": "제3장 예산배분의 기준",
-            "page": "p.11",
-            "order": "#461",
-            "confidence": "0.98",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0468",
-            "kind": "heading",
-            "label": "H3",
-            "excerpt": "제12조(배분 원칙)",
-            "page": "p.11",
-            "order": "#468",
-            "confidence": "0.96",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0470",
-            "kind": "paragraph",
-            "label": "P",
-            "excerpt": "① 중앙행정기관의 장은 소관 연구개발사업의 예산을 배분할 때 …",
-            "page": "p.12",
-            "order": "#470",
-            "confidence": "0.99",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0473",
-            "kind": "heading",
-            "label": "H3",
-            "excerpt": "제13조(중점 투자 분야)",
-            "page": "p.12",
-            "order": "#473",
-            "confidence": "0.91",
-            "selected": True,
-        },
-        {
-            "block_id": "BLK-0474",
-            "kind": "list",
-            "label": "LIST",
-            "excerpt": "1. 인공지능·반도체 등 전략기술 분야 · 2. 감염병 대응 …",
-            "page": "p.12",
-            "order": "#474",
-            "confidence": "0.88",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0476",
-            "kind": "table",
-            "label": "TABLE",
-            "excerpt": "[표 3] 분야별 투자 증감률",
-            "page": "p.12",
-            "order": "#476",
-            "confidence": "0.74",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0479",
-            "kind": "paragraph",
-            "label": "P",
-            "excerpt": "제14조(조정 절차) 예산 조정이 필요한 경우 관계 기관 협의를 …",
-            "page": "p.13",
-            "order": "#479",
-            "confidence": "0.97",
-            "selected": False,
-        },
-    ]
-
-    tables: list[TableItem] = [
-        {
-            "block_id": "BLK-0476",
-            "caption": "[표 3] 분야별 투자 증감률",
-            "size": "4열 × 6행",
-            "page": "p.12",
-            "status": "Warning",
-        },
-        {
-            "block_id": "BLK-0491",
-            "caption": "[표 4] 계속과제 이행 현황",
-            "size": "6열 × 14행",
-            "page": "p.15",
-            "status": "Completed",
-        },
-        {
-            "block_id": "BLK-0512",
-            "caption": "[표 5] 기관별 배분 총액",
-            "size": "5열 × 21행",
-            "page": "p.19",
-            "status": "Completed",
-        },
-    ]
+    markdown_lines: list[CodeLine] = []
+    json_lines: list[CodeLine] = []
+    blocks: list[BlockItem] = []
+    tables: list[TableItem] = []
+    heading_tree: list[HeadingItem] = []
 
     table_preview_header: list[str] = ["분야", "2023", "2024", "증감률"]
     table_preview_rows: list[list[str]] = [
@@ -485,125 +125,10 @@ class ValidationState(rx.State):
         ["기초연구", "26,300", "27,140", "+3.2"],
     ]
 
-    heading_tree: list[HeadingItem] = [
-        {
-            "block_id": "BLK-0102",
-            "level": 1,
-            "text": "국가연구개발사업 예산배분·조정 지침",
-            "page": "p.1",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0118",
-            "level": 2,
-            "text": "제1장 총칙",
-            "page": "p.2",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0121",
-            "level": 3,
-            "text": "제1조(목적)",
-            "page": "p.2",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0126",
-            "level": 3,
-            "text": "제2조(정의)",
-            "page": "p.3",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0301",
-            "level": 2,
-            "text": "제2장 사업 기획",
-            "page": "p.6",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0308",
-            "level": 3,
-            "text": "제7조(기획 절차)",
-            "page": "p.6",
-            "status": "수정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0461",
-            "level": 2,
-            "text": "제3장 예산배분의 기준",
-            "page": "p.11",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0468",
-            "level": 3,
-            "text": "제12조(배분 원칙)",
-            "page": "p.11",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0473",
-            "level": 3,
-            "text": "제13조(중점 투자 분야)",
-            "page": "p.12",
-            "status": "검토",
-            "selected": True,
-        },
-        {
-            "block_id": "BLK-0479",
-            "level": 3,
-            "text": "제14조(조정 절차)",
-            "page": "p.13",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0530",
-            "level": 2,
-            "text": "제4장 성과 평가",
-            "page": "p.21",
-            "status": "확정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0534",
-            "level": 3,
-            "text": "제18조(평가 지표)",
-            "page": "p.21",
-            "status": "수정",
-            "selected": False,
-        },
-        {
-            "block_id": "BLK-0602",
-            "level": 2,
-            "text": "부칙",
-            "page": "p.44",
-            "status": "확정",
-            "selected": False,
-        },
-    ]
+    selected_block_id: str = ""
+    selected_block_text: str = ""
+    inspector_fields: list[InspectorField] = []
 
-    selected_block_id: str = "BLK-0473"
-    selected_block_text: str = "제13조(중점 투자 분야)"
-    inspector_fields: list[InspectorField] = [
-        {"label": "Block ID", "value": "BLK-0473"},
-        {"label": "Kind", "value": "heading"},
-        {"label": "Heading Level", "value": "H3"},
-        {"label": "Page / Order", "value": "12 / #473"},
-        {"label": "Parent", "value": "BLK-0461 (H2)"},
-        {"label": "BBox", "value": "72.0, 318.4, 523.6, 336.1"},
-        {"label": "Confidence", "value": "0.91"},
-        {"label": "Source Parser", "value": "PyMuPDF · text-span"},
-    ]
     heading_levels: list[str] = ["H1", "H2", "H3", "H4", "본문(P)"]
     block_kinds: list[str] = [
         "heading",
@@ -629,9 +154,96 @@ class ValidationState(rx.State):
         "p.27 각주 3건이 본문 문단으로 인식됨",
     ]
 
+    validation_loading: bool = True
+    validation_error: str = ""
+    reparse_error: str = ""
+
     @rx.var
     def page_label(self) -> str:
         return f"{self.current_page} / {self.total_pages}"
+
+    @rx.event
+    async def load_validation_document(self, document_id: str):
+        """document_id는 항상 호출부(select_document, 이후 Part B의 reparse 완료 후
+        재조회 등)가 명시적으로 넘긴다 — 이 함수 자체는 "어떤 문서가 기본값인지"를
+        판단하지 않는다 (그 판단은 on_page_load가 담당)."""
+        self.validation_loading = True
+        self.validation_error = ""
+        try:
+            chunks = await qdrant_service.fetch_document_chunks(document_id)
+            self.document_id = document_id
+            self.markdown_lines = _chunks_to_markdown_lines(chunks)
+            self.json_lines = _chunks_to_json_lines(chunks)
+            self.blocks = _chunks_to_blocks(chunks)
+            self.tables = _chunks_to_tables(chunks)
+            self.heading_tree = _chunks_to_heading_tree(chunks)
+            self.selected_block_id = ""
+            self.selected_block_text = ""
+            self.inspector_fields = []
+        except Exception as e:
+            self.validation_error = f"문서 구조를 불러오지 못했습니다: {e}"
+        finally:
+            self.validation_loading = False
+
+    @rx.event
+    async def select_document(self, value: str):
+        # value는 "DOC-100482 · 파일명" 형태 — "·" 앞부분이 document_id
+        document_id = value.split(" · ")[0].strip()
+        self.document_name = value.split(" · ", 1)[1] if " · " in value else value
+        await self.load_validation_document(document_id)
+
+    @rx.event
+    def set_active_tab(self, tab: str):
+        self.active_tab = tab
+
+    @rx.event
+    def select_block(self, block: BlockItem):
+        self.selected_block_id = block["block_id"]
+        self.selected_block_text = block["excerpt"]
+        self.inspector_fields = _block_to_inspector_fields(block)
+
+    @rx.event
+    def select_heading(self, heading: HeadingItem):
+        self.selected_block_id = heading["block_id"]
+        self.selected_block_text = heading["text"]
+        self.inspector_fields = [
+            {"label": "Block ID", "value": heading["block_id"]},
+            {"label": "Kind", "value": "heading"},
+            {"label": "Level", "value": str(heading["level"])},
+            {"label": "Page", "value": heading["page"]},
+        ]
+
+    @rx.event
+    async def submit_reparse(self):
+        self.reparse_error = ""
+        try:
+            await jobs_service.submit_reparse_job(self.document_id, self.parser_name)
+        except NotImplementedError as e:
+            self.reparse_error = str(e)
+
+    @rx.event
+    def download_markdown(self):
+        content = "\n".join(line["text"] for line in self.markdown_lines)
+        return rx.download(data=content, filename=f"{self.document_id}.md")
+
+    @rx.event
+    def download_json(self):
+        content = "\n".join(line["text"] for line in self.json_lines)
+        return rx.download(data=content, filename=f"{self.document_id}.json")
+
+    @rx.event
+    async def on_page_load(self):
+        try:
+            docs = await qdrant_service.fetch_documents(limit=100)
+            self.document_options = [f"{d['id']} · {d['file_name']}" for d in docs]
+        except Exception as e:
+            self.validation_error = f"문서 목록을 불러오지 못했습니다: {e}"
+            self.validation_loading = False
+            return
+        if self.document_options:
+            await self.select_document(self.document_options[0])
+        else:
+            self.validation_loading = False
 
 
 def _normalize_kind(raw_kind: str) -> str:
