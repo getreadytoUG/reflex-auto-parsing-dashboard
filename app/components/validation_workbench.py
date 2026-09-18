@@ -8,7 +8,6 @@ from app.states.validation_state import (
     InspectorField,
     TableItem,
     ValidationState,
-    ViewerLine,
 )
 
 _GHOST = "flex items-center gap-1.5 border border-stone-300 bg-white px-2.5 py-1.5 text-[12px] font-semibold text-stone-700 transition-colors hover:bg-stone-100"
@@ -62,7 +61,8 @@ def validation_header() -> rx.Component:
                             ValidationState.document_options,
                             lambda o: rx.el.option(o, value=o),
                         ),
-                        default_value=ValidationState.document_options[0],
+                        value=ValidationState.document_id + " · " + ValidationState.document_name,
+                        on_change=ValidationState.select_document,
                         class_name="w-full appearance-none border border-stone-300 bg-white py-1.5 pl-7 pr-7 text-[12px] font-medium text-stone-800 outline-hidden focus:border-stone-500",
                     ),
                     rx.icon(
@@ -99,16 +99,19 @@ def validation_header() -> rx.Component:
                 rx.el.button(
                     rx.icon("rotate-ccw", class_name="h-3.5 w-3.5"),
                     "Reparse",
+                    on_click=ValidationState.submit_reparse,
                     class_name=f"{_GHOST} mt-auto",
                 ),
                 rx.el.button(
                     rx.icon("file-down", class_name="h-3.5 w-3.5"),
                     "Markdown Export",
+                    on_click=ValidationState.download_markdown,
                     class_name=f"{_GHOST} mt-auto",
                 ),
                 rx.el.button(
                     rx.icon("braces", class_name="h-3.5 w-3.5"),
                     "JSON Export",
+                    on_click=ValidationState.download_json,
                     class_name=f"{_DARK} mt-auto",
                 ),
                 class_name="flex flex-wrap items-end gap-2",
@@ -139,74 +142,25 @@ def validation_header() -> rx.Component:
                 ),
                 class_name="flex flex-wrap items-center gap-2",
             ),
-            mock_note("목업 화면 · Reparse·Export·편집 동작 없음"),
+            mock_note("편집 기능은 다음 단계(Part B)에서 지원됩니다"),
             class_name="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 bg-stone-50 px-3.5 py-2",
         ),
+        rx.cond(
+            ValidationState.reparse_error != "",
+            rx.el.div(
+                rx.icon(
+                    "triangle-alert",
+                    class_name="h-3.5 w-3.5 shrink-0 text-red-600",
+                ),
+                rx.el.span(
+                    ValidationState.reparse_error,
+                    class_name="text-[11px] font-semibold text-red-700",
+                ),
+                class_name="flex items-center gap-1.5 border-t border-red-200 bg-red-50 px-3.5 py-2",
+            ),
+            rx.fragment(),
+        ),
         class_name="w-full border border-stone-200 bg-white",
-    )
-
-
-def viewer_line(line: ViewerLine) -> rx.Component:
-    return rx.el.p(
-        line["text"],
-        class_name=rx.match(
-            line["style"],
-            (
-                "h1",
-                "mb-2 border-b border-stone-300 pb-1 text-center text-[13px] font-bold tracking-tight text-stone-900",
-            ),
-            ("h2", "mt-3 text-[12px] font-bold text-stone-900"),
-            (
-                "list",
-                "pl-4 text-[11px] leading-[1.9] tracking-tight text-stone-700",
-            ),
-            (
-                "caption",
-                "mt-2 text-center text-[10px] font-semibold text-stone-600",
-            ),
-            (
-                "footer",
-                "mt-4 text-center text-[10px] tracking-widest text-stone-400",
-            ),
-            "text-justify text-[11px] leading-[1.9] tracking-tight text-stone-700",
-        ),
-    )
-
-
-def viewer_toolbar() -> rx.Component:
-    return rx.el.div(
-        rx.el.div(
-            rx.el.button(
-                rx.icon("chevron-left", class_name="h-3.5 w-3.5"),
-                class_name=_TOOL,
-            ),
-            rx.el.span(
-                ValidationState.page_label,
-                class_name="min-w-[3.5rem] text-center font-mono text-[11px] font-semibold tabular-nums text-stone-700",
-            ),
-            rx.el.button(
-                rx.icon("chevron-right", class_name="h-3.5 w-3.5"),
-                class_name=_TOOL,
-            ),
-            class_name="flex items-center gap-1",
-        ),
-        rx.el.div(
-            rx.el.button(
-                rx.icon("zoom-out", class_name="h-3.5 w-3.5"), class_name=_TOOL
-            ),
-            rx.el.span(
-                ValidationState.zoom_label,
-                class_name="min-w-[2.8rem] text-center font-mono text-[11px] font-semibold tabular-nums text-stone-700",
-            ),
-            rx.el.button(
-                rx.icon("zoom-in", class_name="h-3.5 w-3.5"), class_name=_TOOL
-            ),
-            rx.el.button(
-                rx.icon("maximize", class_name="h-3.5 w-3.5"), class_name=_TOOL
-            ),
-            class_name="flex items-center gap-1",
-        ),
-        class_name="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-stone-200 bg-white px-3 py-1.5",
     )
 
 
@@ -221,61 +175,17 @@ def panel_a() -> rx.Component:
             ),
             class_name=_PANEL_HEAD,
         ),
-        viewer_toolbar(),
         rx.el.div(
-            rx.el.div(
-                rx.el.div(
-                    rx.el.span(
-                        "국가과학기술자문회의",
-                        class_name="text-[9px] tracking-widest text-stone-400",
-                    ),
-                    rx.el.span(
-                        "대외비 · 내부검토용",
-                        class_name="text-[9px] tracking-widest text-stone-400",
-                    ),
-                    class_name="mb-3 flex items-center justify-between border-b border-dashed border-stone-200 pb-1.5",
-                ),
-                rx.el.p(
-                    ValidationState.viewer_header,
-                    class_name="mb-3 text-center text-[10px] font-semibold tracking-[0.2em] text-stone-500",
-                ),
-                rx.foreach(ValidationState.viewer_lines, viewer_line),
-                rx.el.div(
-                    rx.el.p(
-                        "선택된 block 영역 (BLK-0473)",
-                        class_name="text-[10px] font-semibold text-amber-700",
-                    ),
-                    class_name="mt-3 border-2 border-amber-400/70 bg-amber-50/50 px-2 py-1",
-                ),
-                class_name="mx-auto w-full max-w-[30rem] border border-stone-300 bg-white px-6 py-7 shadow-xs",
+            rx.icon("file-search", class_name="h-8 w-8 text-stone-300"),
+            rx.el.p(
+                "원본 렌더러 연동 대기",
+                class_name="mt-2 text-[12px] font-semibold text-stone-600",
             ),
-            rx.el.div(
-                rx.el.span(
-                    "페이지 썸네일",
-                    class_name="text-[10px] font-semibold uppercase tracking-wider text-stone-400",
-                ),
-                rx.el.div(
-                    rx.el.div(
-                        "11",
-                        class_name="flex h-9 w-7 items-center justify-center border border-stone-300 bg-white text-[10px] font-semibold text-stone-500",
-                    ),
-                    rx.el.div(
-                        "12",
-                        class_name="flex h-9 w-7 items-center justify-center border-2 border-amber-400 bg-amber-50 text-[10px] font-bold text-amber-700",
-                    ),
-                    rx.el.div(
-                        "13",
-                        class_name="flex h-9 w-7 items-center justify-center border border-stone-300 bg-white text-[10px] font-semibold text-stone-500",
-                    ),
-                    rx.el.div(
-                        "14",
-                        class_name="flex h-9 w-7 items-center justify-center border border-stone-300 bg-white text-[10px] font-semibold text-stone-500",
-                    ),
-                    class_name="mt-1.5 flex items-center gap-1.5",
-                ),
-                class_name="mx-auto mt-4 w-full max-w-[30rem]",
+            rx.el.p(
+                "PDF/이미지 원본 미리보기는 다음 단계에서 지원됩니다.",
+                class_name="mt-1 text-[11px] text-stone-400",
             ),
-            class_name="min-h-0 flex-1 overflow-y-auto bg-[#efece5] px-4 py-5",
+            class_name="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 bg-[#efece5] px-4 py-5 text-center",
         ),
         class_name=f"{_PANEL} h-[36rem]",
     )
@@ -284,8 +194,9 @@ def panel_a() -> rx.Component:
 def tab_button(tab: str) -> rx.Component:
     return rx.el.button(
         tab,
+        on_click=lambda: ValidationState.set_active_tab(tab),
         class_name=rx.cond(
-            tab == "Markdown",
+            ValidationState.active_tab == tab,
             "border-b-2 border-amber-500 px-2.5 py-1.5 text-[12px] font-bold text-stone-900",
             "border-b-2 border-transparent px-2.5 py-1.5 text-[12px] font-semibold text-stone-500 transition-colors hover:text-stone-800",
         ),
@@ -380,6 +291,7 @@ def blocks_row(block: BlockItem) -> rx.Component:
         rx.icon(
             "chevron-right", class_name="h-3.5 w-3.5 shrink-0 text-stone-300"
         ),
+        on_click=lambda: ValidationState.select_block(block),
         class_name=rx.cond(
             block["selected"],
             "flex items-center justify-between gap-2 border-b border-stone-100 border-l-2 border-l-amber-500 bg-amber-50/70 px-3 py-2",
@@ -482,41 +394,75 @@ def panel_b() -> rx.Component:
             rx.foreach(ValidationState.tabs, tab_button),
             class_name="flex shrink-0 items-center gap-1 border-b border-stone-200 bg-white px-2",
         ),
-        rx.el.div(
+        rx.cond(
+            ValidationState.validation_loading,
             rx.el.div(
-                rx.el.p(
-                    "MARKDOWN · docparse/results/DOC-100482/index.md",
-                    class_name="mb-1 font-mono text-[10px] tracking-wide text-stone-400",
-                ),
-                rx.foreach(ValidationState.markdown_lines, code_line),
-                class_name="border-b border-stone-200 bg-[#fcfbf8] py-2",
+                "문서 구조를 불러오는 중...",
+                class_name="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[12px] text-stone-500",
             ),
-            rx.el.div(
-                rx.el.p(
-                    "BLOCKS JSON · schema v1 (발췌)",
-                    class_name="mb-1 px-3 font-mono text-[10px] tracking-wide text-stone-400",
+            rx.cond(
+                ValidationState.validation_error != "",
+                rx.el.div(
+                    ValidationState.validation_error,
+                    class_name="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[12px] font-semibold text-red-600",
                 ),
-                rx.foreach(ValidationState.json_lines, code_line),
-                class_name="border-b border-stone-200 bg-[#fcfbf8] py-2",
-            ),
-            rx.el.div(
-                rx.el.p(
-                    "BLOCK LIST",
-                    class_name="border-b border-stone-100 px-3 py-1.5 font-mono text-[10px] tracking-wide text-stone-400",
+                rx.el.div(
+                    rx.cond(
+                        ValidationState.active_tab == "Markdown",
+                        rx.el.div(
+                            rx.el.p(
+                                "MARKDOWN · docparse/results/"
+                                + ValidationState.document_id
+                                + "/index.md",
+                                class_name="mb-1 font-mono text-[10px] tracking-wide text-stone-400",
+                            ),
+                            rx.foreach(ValidationState.markdown_lines, code_line),
+                            class_name="border-b border-stone-200 bg-[#fcfbf8] py-2",
+                        ),
+                        rx.fragment(),
+                    ),
+                    rx.cond(
+                        ValidationState.active_tab == "JSON",
+                        rx.el.div(
+                            rx.el.p(
+                                "BLOCKS JSON · schema v1 (발췌)",
+                                class_name="mb-1 px-3 font-mono text-[10px] tracking-wide text-stone-400",
+                            ),
+                            rx.foreach(ValidationState.json_lines, code_line),
+                            class_name="border-b border-stone-200 bg-[#fcfbf8] py-2",
+                        ),
+                        rx.fragment(),
+                    ),
+                    rx.cond(
+                        ValidationState.active_tab == "Blocks",
+                        rx.el.div(
+                            rx.el.p(
+                                "BLOCK LIST",
+                                class_name="border-b border-stone-100 px-3 py-1.5 font-mono text-[10px] tracking-wide text-stone-400",
+                            ),
+                            rx.foreach(ValidationState.blocks, blocks_row),
+                            class_name="bg-white",
+                        ),
+                        rx.fragment(),
+                    ),
+                    rx.cond(
+                        ValidationState.active_tab == "Tables",
+                        rx.el.div(
+                            rx.el.div(
+                                rx.el.p(
+                                    "TABLES",
+                                    class_name="border-b border-stone-100 px-3 py-1.5 font-mono text-[10px] tracking-wide text-stone-400",
+                                ),
+                                rx.foreach(ValidationState.tables, tables_row),
+                                class_name="border-t border-stone-200 bg-white",
+                            ),
+                            table_preview(),
+                        ),
+                        rx.fragment(),
+                    ),
+                    class_name="min-h-0 flex-1 overflow-y-auto",
                 ),
-                rx.foreach(ValidationState.blocks, blocks_row),
-                class_name="bg-white",
             ),
-            rx.el.div(
-                rx.el.p(
-                    "TABLES",
-                    class_name="border-b border-stone-100 px-3 py-1.5 font-mono text-[10px] tracking-wide text-stone-400",
-                ),
-                rx.foreach(ValidationState.tables, tables_row),
-                class_name="border-t border-stone-200 bg-white",
-            ),
-            table_preview(),
-            class_name="min-h-0 flex-1 overflow-y-auto",
         ),
         class_name=f"{_PANEL} h-[36rem]",
     )
@@ -575,6 +521,7 @@ def heading_node(item: HeadingItem) -> rx.Component:
                 "shrink-0 border border-stone-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-stone-500",
             ),
         ),
+        on_click=lambda: ValidationState.select_heading(item),
         class_name=rx.cond(
             item["selected"],
             rx.match(

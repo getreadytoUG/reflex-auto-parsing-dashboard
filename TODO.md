@@ -68,6 +68,17 @@
 
 ## 5. Validation / 구조 편집 (가장 핵심 화면, 현재 전부 시각화 전용)
 
+**2026-09-18 갱신 (Part A): 문서 선택 → 데이터 로드, 탭 전환, Blocks/Heading 클릭 → 인스펙터, Export는 실연동되었습니다.**
+(설계 근거: [docs/superpowers/specs/2026-09-18-validation-part-a-real-integration-design.md](docs/superpowers/specs/2026-09-18-validation-part-a-real-integration-design.md))
+
+- ✅ 문서 선택 드롭다운이 Qdrant `PARENT_COLLECTION`(`qdrant_service.fetch_documents()`, Documents 페이지와 동일 함수 재사용)에서 실제 문서 목록을 채우고, 선택 시 `CHILD_COLLECTION`에서 그 문서의 청크를 실제로 조회합니다 — [app/services/qdrant_service.py](app/services/qdrant_service.py)의 `fetch_document_chunks()`, [app/states/validation_state.py](app/states/validation_state.py)의 `load_validation_document`/`select_document`/`on_page_load`.
+- ✅ 탭 클릭(Markdown/JSON/Blocks/Tables)이 실제로 활성 탭을 바꾸고 해당 내용만 보여줍니다. Blocks/Heading Tree 행 클릭 시 인스펙터(Panel C)에 그 블록의 실제 필드가 표시됩니다.
+- ✅ Markdown/JSON Export 버튼이 현재 로드된 데이터를 실제로 `.md`/`.json` 파일로 다운로드합니다 (`rx.download`, 백엔드 불필요).
+- ⛔ Reparse 버튼은 [app/services/jobs_service.py](app/services/jobs_service.py)의 `submit_reparse_job()`을 실제로 호출은 하지만, 내부망 `API_BASE_URL` Job 제출 스펙이 아직 없어 항상 `NotImplementedError`를 던지고 `reparse_error` 배너로 정직하게 표시됩니다.
+- ⛔ Panel A(원본 뷰어)는 실제 PDF/이미지 렌더링 대신 "원본 렌더러 연동 대기" 안내 문구로 대체되어 있습니다 — 기존의 가짜 본문 타이핑 흉내(`viewer_lines`)는 완전히 삭제했습니다.
+- ⛔ 구조 편집(Heading level 변경, Paragraph↔Heading 전환, 블록 병합/분리/이동/텍스트 수정/삭제)과 `change_log`의 실제 누적은 여전히 시각화 전용입니다 — Part B에서 다룹니다.
+- ⛔ `CHILD_COLLECTION`의 실제 payload 스키마(필드명, heading level 세분화, 표 셀 데이터, 검수 상태 소스)는 아직 확인되지 않았습니다 — 스펙 11절 "미해결 사항" 참고. `_CHUNK_PAYLOAD_FIELD_MAP`(qdrant_service.py) 하나만 고치면 반영됩니다.
+
 - [app/states/validation_state.py](app/states/validation_state.py) 전체가 정적 목업입니다: `viewer_lines`(80-114행), `markdown_lines`/`json_lines`(116-379행), `blocks`(381-452행), `heading_tree`(486-591행) 모두 하드코딩된 한 개 문서 예시입니다.
 - 상단 툴바의 핵심 버튼들이 클릭해도 아무 동작을 하지 않습니다: [app/components/validation_workbench.py:99-113](app/components/validation_workbench.py) (`Reparse`, `Markdown Export`, `JSON Export`), 이를 [validation_workbench.py:142](app/components/validation_workbench.py)에서 `mock_note("목업 화면 · Reparse·Export·편집 동작 없음")`로 명시.
 - Heading level 변경, block 병합/분리/삭제 등 구조 편집 도구도 시각화만 되어 있음: [validation_workbench.py:749](app/components/validation_workbench.py) `mock_note("모든 편집 제어는 시각화 전용")`.

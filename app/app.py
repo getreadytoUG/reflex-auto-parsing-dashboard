@@ -8,6 +8,7 @@ from app.pages.validation import validation_page
 from app.states.dashboard_state import DashboardState
 from app.states.documents_state import DocumentsState
 from app.states.jobs_state import JobsState
+from app.states.validation_state import ValidationState
 
 
 def index() -> rx.Component:
@@ -34,5 +35,7 @@ app.add_page(
     documents_page, route="/documents", on_load=DocumentsState.load_documents
 )
 app.add_page(jobs_page, route="/jobs", on_load=JobsState.load_jobs)
-app.add_page(validation_page, route="/validation")
+app.add_page(
+    validation_page, route="/validation", on_load=ValidationState.on_page_load
+)
 app.add_page(settings_page, route="/settings")

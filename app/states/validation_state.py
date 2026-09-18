@@ -42,11 +42,6 @@ class TableItem(TypedDict):
     status: str
 
 
-class ViewerLine(TypedDict):
-    text: str
-    style: str
-
-
 class InspectorField(TypedDict):
     label: str
     value: str
@@ -67,49 +62,8 @@ class ValidationState(rx.State):
     change_count: int = 0
     unsaved_changes: bool = False
 
-    current_page: int = 12
-    total_pages: int = 48
-    zoom_label: str = "120%"
-
     tabs: list[str] = ["Markdown", "JSON", "Blocks", "Tables"]
     active_tab: str = "Markdown"
-
-    viewer_header: str = "국가연구개발사업 예산배분·조정 지침"
-    viewer_lines: list[ViewerLine] = [
-        {"text": "제3장 예산배분의 기준", "style": "h1"},
-        {
-            "text": "제12조(배분 원칙) ① 중앙행정기관의 장은 소관 연구개발사업의 예산을 배분할 때 국가과학기술자문회의의 심의 결과와 사업 성과평가 결과를 우선 반영하여야 한다.",
-            "style": "body",
-        },
-        {
-            "text": "② 제1항에 따른 배분 결과는 사업별 투자 우선순위, 계속과제의 이행 상황, 신규과제의 기획 완성도를 종합하여 조정한다.",
-            "style": "body",
-        },
-        {"text": "제13조(중점 투자 분야)", "style": "h2"},
-        {
-            "text": "① 중점 투자 분야는 다음 각 호와 같다.",
-            "style": "body",
-        },
-        {"text": "1. 인공지능·반도체 등 전략기술 분야", "style": "list"},
-        {"text": "2. 감염병 대응 및 공공보건 연구 분야", "style": "list"},
-        {"text": "3. 탄소중립 이행 기반 기술 분야", "style": "list"},
-        {
-            "text": "② 중점 투자 분야의 투자 규모는 전년도 본예산 대비 증감률을 명시하여 별표 4에 따라 산정한다.",
-            "style": "body",
-        },
-        {
-            "text": "[표 3] 분야별 투자 증감률 (단위: 억원, %)",
-            "style": "caption",
-        },
-        {
-            "text": "제14조(조정 절차) 예산 조정이 필요한 경우 관계 기관 협의를 거쳐 조정안을 작성하고, 조정 사유와 근거 자료를 첨부하여 심의에 부친다.",
-            "style": "body",
-        },
-        {
-            "text": "— 12 —",
-            "style": "footer",
-        },
-    ]
 
     markdown_lines: list[CodeLine] = []
     json_lines: list[CodeLine] = []
@@ -157,10 +111,6 @@ class ValidationState(rx.State):
     validation_loading: bool = True
     validation_error: str = ""
     reparse_error: str = ""
-
-    @rx.var
-    def page_label(self) -> str:
-        return f"{self.current_page} / {self.total_pages}"
 
     @rx.event
     async def load_validation_document(self, document_id: str):
