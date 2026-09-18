@@ -78,7 +78,7 @@ def jobs_table() -> rx.Component:
                     class_name="text-[13px] font-bold tracking-tight text-stone-900",
                 ),
                 rx.el.p(
-                    "최근 10건의 작업 이력 (목업 데이터)",
+                    "최근 10건의 작업 이력",
                     class_name="text-[11px] text-stone-500",
                 ),
             ),
@@ -97,36 +97,45 @@ def jobs_table() -> rx.Component:
             ),
             class_name="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-3.5 py-2.5",
         ),
-        rx.el.div(
-            rx.el.table(
-                rx.el.thead(
-                    rx.el.tr(
-                        th("hash", "Job ID"),
-                        th("file", "문서명"),
-                        th("tag", "유형"),
-                        th("cpu", "Parser"),
-                        th("layers", "분량"),
-                        th("timer", "소요"),
-                        th("user", "요청자"),
-                        th("clock", "시작"),
-                        th("activity", "상태"),
-                        rx.el.th("", class_name=_TH),
-                    ),
-                    class_name="border-b border-stone-200 bg-stone-50",
-                ),
-                rx.el.tbody(
-                    rx.foreach(
-                        DashboardState.recent_jobs,
-                        lambda job, index: job_row(job, index),
-                    )
-                ),
-                class_name="w-full table-auto border-collapse",
+        rx.cond(
+            DashboardState.recent_jobs.length() == 0,
+            rx.el.div(
+                "아직 기록된 Job이 없습니다.",
+                class_name="p-6 text-center text-[12px] text-stone-500",
             ),
-            class_name="w-full overflow-x-auto",
+            rx.el.div(
+                rx.el.table(
+                    rx.el.thead(
+                        rx.el.tr(
+                            th("hash", "Job ID"),
+                            th("file", "문서명"),
+                            th("tag", "유형"),
+                            th("cpu", "Parser"),
+                            th("layers", "분량"),
+                            th("timer", "소요"),
+                            th("user", "요청자"),
+                            th("clock", "시작"),
+                            th("activity", "상태"),
+                            rx.el.th("", class_name=_TH),
+                        ),
+                        class_name="border-b border-stone-200 bg-stone-50",
+                    ),
+                    rx.el.tbody(
+                        rx.foreach(
+                            DashboardState.recent_jobs,
+                            lambda job, index: job_row(job, index),
+                        )
+                    ),
+                    class_name="w-full table-auto border-collapse",
+                ),
+                class_name="w-full overflow-x-auto",
+            ),
         ),
         rx.el.div(
             rx.el.p(
-                "총 12,486건 중 10건 표시",
+                "총 ",
+                DashboardState.recent_jobs.length(),
+                "건 표시",
                 class_name="text-[11px] font-medium text-stone-500",
             ),
             rx.el.div(

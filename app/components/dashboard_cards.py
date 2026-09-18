@@ -50,11 +50,26 @@ def kpi_card(item: KpiItem, **props) -> rx.Component:
 
 
 def kpi_grid() -> rx.Component:
-    return rx.el.div(
-        rx.foreach(
-            DashboardState.kpis, lambda item: kpi_card(item, key=item["label"])
+    return rx.cond(
+        DashboardState.dashboard_loading,
+        rx.el.div(
+            "통계를 불러오는 중...",
+            class_name="p-6 text-center text-[12px] text-stone-500",
         ),
-        class_name="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6",
+        rx.cond(
+            DashboardState.dashboard_error != "",
+            rx.el.div(
+                DashboardState.dashboard_error,
+                class_name="p-6 text-center text-[12px] font-semibold text-red-600",
+            ),
+            rx.el.div(
+                rx.foreach(
+                    DashboardState.kpis,
+                    lambda item: kpi_card(item, key=item["label"]),
+                ),
+                class_name="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6",
+            ),
+        ),
     )
 
 
@@ -87,27 +102,24 @@ def pipeline_panel() -> rx.Component:
                 class_name="text-[13px] font-bold tracking-tight text-stone-900",
             ),
             rx.el.span(
-                "실시간 목업",
+                "실시간 큐 연동 대기",
                 class_name="text-[10px] font-medium text-stone-400",
             ),
             class_name="flex items-center justify-between border-b border-stone-200 px-3.5 py-2.5",
         ),
-        rx.el.div(
-            rx.foreach(
-                DashboardState.queue_stages,
-                lambda stage: stage_row(stage, key=stage[1]),
-            ),
-            class_name="px-3.5 py-1.5",
-        ),
-        rx.el.div(
+        rx.cond(
+            DashboardState.queue_stages.length() == 0,
             rx.el.p(
-                "SLA 준수율",
-                class_name="text-[11px] font-medium text-stone-500",
+                "파이프라인 단계별 카운트는 아직 연동되지 않았습니다.",
+                class_name="px-3.5 py-4 text-[11px] text-stone-500",
             ),
-            rx.el.p(
-                "96.2%", class_name="text-[13px] font-bold text-emerald-700"
+            rx.el.div(
+                rx.foreach(
+                    DashboardState.queue_stages,
+                    lambda stage: stage_row(stage, key=stage[1]),
+                ),
+                class_name="px-3.5 py-1.5",
             ),
-            class_name="flex items-center justify-between border-t border-stone-200 bg-stone-50 px-3.5 py-2.5",
         ),
         class_name="flex w-full flex-col border border-stone-200 bg-white",
     )

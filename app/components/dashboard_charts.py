@@ -73,8 +73,22 @@ def parser_chart() -> rx.Component:
 
 
 def charts_row() -> rx.Component:
-    return rx.el.div(
-        file_type_chart(),
-        parser_chart(),
-        class_name="flex w-full flex-col gap-3 xl:flex-row",
+    return rx.cond(
+        DashboardState.dashboard_loading,
+        rx.el.div(
+            "차트를 불러오는 중...",
+            class_name="w-full p-6 text-center text-[12px] text-stone-500",
+        ),
+        rx.cond(
+            DashboardState.dashboard_error != "",
+            rx.el.div(
+                DashboardState.dashboard_error,
+                class_name="w-full p-6 text-center text-[12px] font-semibold text-red-600",
+            ),
+            rx.el.div(
+                file_type_chart(),
+                parser_chart(),
+                class_name="flex w-full flex-col gap-3 xl:flex-row",
+            ),
+        ),
     )
