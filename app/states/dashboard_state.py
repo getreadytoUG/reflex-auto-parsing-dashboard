@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TypedDict
 
 import reflex as rx
@@ -143,6 +144,18 @@ def _build_kpis(stats: dict, avg_duration: float | None) -> list[KpiItem]:
     ]
 
 
+def _format_started_at(started_at: str) -> str:
+    """ISO 8601 문자열을 "시작" 컬럼에 맞는 HH:MM으로 포맷한다.
+
+    파싱에 실패하면(예: 수작업으로 편집된 로그) 원본 문자열을 그대로
+    반환한다 — 크래시보다 부정확한 표시가 낫다.
+    """
+    try:
+        return datetime.fromisoformat(started_at).strftime("%H:%M")
+    except ValueError:
+        return started_at
+
+
 def _job_event_to_row(event: JobLogEvent) -> JobRow:
     minutes, seconds = divmod(int(event["duration_seconds"]), 60)
     duration = f"{minutes}분 {seconds}초" if minutes else f"{seconds}초"
@@ -154,6 +167,6 @@ def _job_event_to_row(event: JobLogEvent) -> JobRow:
         "pages": event["pages"],
         "duration": duration,
         "requester": event["requester"],
-        "started_at": event["started_at"],
+        "started_at": _format_started_at(event["started_at"]),
         "status": event["status"],
     }

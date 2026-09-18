@@ -17,7 +17,19 @@ import json
 from pathlib import Path
 from typing import TypedDict
 
-_LOG_PATH = Path("data/job_log.jsonl")
+_LOG_PATH = Path(__file__).resolve().parents[2] / "data" / "job_log.jsonl"
+
+_REQUIRED_KEYS = (
+    "job_id",
+    "file_name",
+    "file_type",
+    "parser",
+    "pages",
+    "duration_seconds",
+    "requester",
+    "started_at",
+    "status",
+)
 
 
 class JobLogEvent(TypedDict):
@@ -32,11 +44,25 @@ class JobLogEvent(TypedDict):
     status: str
 
 
+def _is_valid_event(obj: object) -> bool:
+    """JSON은 유효하지만 스키마가 깨진 이벤트(필수 키 누락/타입 불일치)를 걸러낸다."""
+    if not isinstance(obj, dict):
+        return False
+    if not all(key in obj for key in _REQUIRED_KEYS):
+        return False
+    if isinstance(obj["duration_seconds"], bool) or not isinstance(
+        obj["duration_seconds"], (int, float)
+    ):
+        return False
+    return True
+
+
 def _read_events() -> list[JobLogEvent]:
     """로그 파일을 읽어 이벤트 목록으로 반환한다.
 
     파일이 없으면 빈 리스트(정상 상태 — 아직 Job이 한 번도 안 돈 것뿐).
-    한 줄이라도 JSON 파싱에 실패하면 로그 전체를 빈 것으로 취급한다
+    한 줄이라도 JSON 파싱에 실패하거나, JSON은 유효하지만 필수 키가
+    없거나 타입이 맞지 않으면 로그 전체를 빈 것으로 취급한다
     (부분적으로 깨진 로그를 신뢰하지 않는다).
     """
     if not _LOG_PATH.exists():
@@ -45,8 +71,16 @@ def _read_events() -> list[JobLogEvent]:
     try:
         for line in _LOG_PATH.read_text(encoding="utf-8").splitlines():
             line = line.strip()
-            if line:
-                events.append(json.loads(line))
+            if not line:
+                continue
+            parsed = json.loads(line)
+            if not _is_valid_event(parsed):
+                print(
+                    f"[job_log_service] {_LOG_PATH}에 스키마가 유효하지 않은 "
+                    f"이벤트가 있어 빈 로그로 처리: {parsed!r}"
+                )
+                return []
+            events.append(parsed)
     except (json.JSONDecodeError, OSError) as e:
         print(f"[job_log_service] {_LOG_PATH} 읽기 실패, 빈 로그로 처리: {e}")
         return []

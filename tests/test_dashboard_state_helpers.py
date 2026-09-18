@@ -38,7 +38,7 @@ def test_job_event_to_row_formats_duration_under_a_minute():
         "pages": "10 p",
         "duration_seconds": 38.0,
         "requester": "이준호",
-        "started_at": "10:39",
+        "started_at": "2026-09-18T10:39:00",
         "status": "Completed",
     }
 
@@ -47,6 +47,7 @@ def test_job_event_to_row_formats_duration_under_a_minute():
     assert row["duration"] == "38초"
     assert row["id"] == "JOB-1"
     assert row["file_type"] == "PDF"
+    assert row["started_at"] == "10:39"
 
 
 def test_job_event_to_row_formats_duration_over_a_minute():
@@ -58,10 +59,11 @@ def test_job_event_to_row_formats_duration_over_a_minute():
         "pages": "128 p",
         "duration_seconds": 72.0,
         "requester": "김서연",
-        "started_at": "10:42",
+        "started_at": "2026-09-18T10:42:00",
         "status": "Completed",
     }
 
     row = _job_event_to_row(event)
 
     assert row["duration"] == "1분 12초"
+    assert row["started_at"] == "10:42"

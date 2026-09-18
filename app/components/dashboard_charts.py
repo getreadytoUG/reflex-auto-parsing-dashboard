@@ -4,7 +4,9 @@ import reflex_xy
 from app.states.dashboard_state import DashboardState
 
 
-def chart_card(title: str, subtitle: str, chart: rx.Component) -> rx.Component:
+def chart_card(
+    title: str, subtitle: str, chart: rx.Component, badge: str
+) -> rx.Component:
     return rx.el.section(
         rx.el.div(
             rx.el.div(
@@ -15,7 +17,7 @@ def chart_card(title: str, subtitle: str, chart: rx.Component) -> rx.Component:
                 rx.el.p(subtitle, class_name="text-[11px] text-stone-500"),
             ),
             rx.el.span(
-                "최근 30일",
+                badge,
                 class_name="w-fit border border-stone-300 bg-stone-50 px-1.5 py-0.5 text-[10px] font-semibold text-stone-500",
             ),
             class_name="flex items-start justify-between border-b border-stone-200 px-3.5 py-2.5",
@@ -45,6 +47,7 @@ def file_type_chart() -> rx.Component:
             height="280px",
             class_name="w-full",
         ),
+        badge="전체 기간",
     )
 
 
@@ -69,26 +72,34 @@ def parser_chart() -> rx.Component:
             height="280px",
             class_name="w-full",
         ),
+        badge="누적",
     )
 
 
 def charts_row() -> rx.Component:
-    return rx.cond(
-        DashboardState.dashboard_loading,
-        rx.el.div(
-            "차트를 불러오는 중...",
-            class_name="w-full p-6 text-center text-[12px] text-stone-500",
+    return rx.el.div(
+        rx.cond(
+            DashboardState.dashboard_loading,
+            rx.el.div(
+                "차트를 불러오는 중...",
+                class_name="w-full p-6 text-center text-[12px] text-stone-500",
+            ),
+            rx.cond(
+                DashboardState.dashboard_error != "",
+                rx.el.div(
+                    DashboardState.dashboard_error,
+                    class_name="w-full p-6 text-center text-[12px] font-semibold text-red-600",
+                ),
+                file_type_chart(),
+            ),
         ),
         rx.cond(
-            DashboardState.dashboard_error != "",
+            DashboardState.parsers.length() == 0,
             rx.el.div(
-                DashboardState.dashboard_error,
-                class_name="w-full p-6 text-center text-[12px] font-semibold text-red-600",
+                "아직 기록된 Job이 없습니다.",
+                class_name="p-6 text-center text-[12px] text-stone-500",
             ),
-            rx.el.div(
-                file_type_chart(),
-                parser_chart(),
-                class_name="flex w-full flex-col gap-3 xl:flex-row",
-            ),
+            parser_chart(),
         ),
+        class_name="flex w-full flex-col gap-3 xl:flex-row",
     )

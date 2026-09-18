@@ -76,3 +76,15 @@ def test_corrupted_log_line_is_treated_as_empty_log():
 
     assert job_log_service.read_recent_jobs() == []
     assert job_log_service.read_average_duration_seconds() is None
+
+
+def test_schema_invalid_log_line_is_treated_as_empty_log():
+    # JSON이 유효해도 필수 키(duration_seconds 등)가 없으면 스키마 위반이다 —
+    # 손상된 로그와 동일하게 전체를 빈 것으로 취급해서 KeyError를 막아야 한다.
+    job_log_service._LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    job_log_service._LOG_PATH.write_text(
+        '{"job_id": "JOB-1"}\n', encoding="utf-8"
+    )
+
+    assert job_log_service.read_recent_jobs() == []
+    assert job_log_service.read_average_duration_seconds() is None

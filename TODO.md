@@ -59,6 +59,7 @@
   2. 파싱 자체는 `asyncio.create_task` 기반 백그라운드 태스크 또는 별도 Python 프로세스(Worker)에서 실행하고, 진행률은 DB(`ParsingJob` 테이블)에 기록.
   3. `JobsState`에 `rx.event(background=True)` 또는 `yield`로 주기 폴링하는 이벤트를 추가해 3초 간격으로 `ProgressSnapshot`을 가져와 `jobs` 리스트를 갱신 ([settings_state.py:113-117](app/states/settings_state.py)에 명시된 "진행률 폴링 주기: 3초" 반영).
   4. Documents 페이지의 "파싱 실행" 버튼(3번 항목) → `job_service.submit()` 호출로 연결.
+  5. **2026-09-18 추가**: 이 기능이 붙으면 Job 시작/완료 시점에 [app/services/job_log_service.py](app/services/job_log_service.py)의 `append_job_event()`도 함께 호출해야 한다 — Dashboard의 "최근 Job"/"Parser별 처리량"/"평균 파싱 시간"이 이 로그를 읽어 집계하는데, 현재는 아무도 호출하지 않아 항상 빈 상태다 (7번 항목 참고).
 
 ## 5. Validation / 구조 편집 (가장 핵심 화면, 현재 전부 시각화 전용)
 
@@ -84,9 +85,15 @@
 
 ## 7. Dashboard 지표 실데이터 연동
 
-- KPI, 파일 유형 분포, Parser 처리량, 최근 Job, 큐 단계 카운트가 모두 하드코딩입니다: [app/states/dashboard_state.py:29-219](app/states/dashboard_state.py).
-- `reflex_xy` 차트 데이터 소스도 위 하드코딩된 리스트를 그대로 반환합니다: [dashboard_state.py:221-227](app/states/dashboard_state.py) (`file_type_data`, `parser_data`).
-- 필요한 작업: 위 1~4번(DB, Job) 구현 후 `DashboardState`가 `Document`/`ParsingJob` 테이블에 대한 집계 쿼리(`COUNT`, `AVG(duration)`, `GROUP BY file_type` 등)로 값을 채우도록 변경.
+**2026-09-18 갱신: 아래 항목 중 문서 수 KPI/파일 유형 차트, 그리고 Job 로그 연동 배관까지는 실연동되었습니다.**
+
+- ✅ 전체 문서/파싱 성공/Warning/Failed/검수 필요 KPI와 "파일 유형별 문서 수" 차트는 더 이상 하드코딩이 아니라 Qdrant 집계 결과([app/services/qdrant_service.py](app/services/qdrant_service.py))에서 채워집니다 — [app/states/dashboard_state.py](app/states/dashboard_state.py)의 `load_dashboard`, `_build_kpis`.
+- ✅ "최근 Job" 테이블, "Parser별 처리량" 차트, "평균 파싱 시간" KPI를 위한 배관도 완성되었습니다 — 새로 추가된 로컬 `data/job_log.jsonl`(JSON Lines)을 [app/services/job_log_service.py](app/services/job_log_service.py)가 읽어 `DashboardState.load_dashboard`에 넘겨줍니다. 다만 **이 로그 파일에는 아직 아무도 쓰지 않아 항상 비어 있습니다** — 그래서 이 세 위젯은 현재도 "기록 없음" 빈 상태로 보입니다.
+- ⛔ 파이프라인 단계별 큐 카운트(`queue_stages`)는 여전히 스텁입니다 — 실시간 큐 시스템이 없어 [dashboard_state.py](app/states/dashboard_state.py)에서 항상 빈 리스트를 반환하고, UI가 "실시간 큐 연동 대기" 안내로 대체합니다.
+- ⛔ `job_log_service.append_job_event()`를 호출하는 곳이 아직 없습니다 — 함수 시그니처와 파일 포맷만 확정되어 있으며, 실제로 로그를 채우려면 4번 항목("Job 실행 / Worker 분리")의 Job 시작/완료 지점에서 이 함수를 호출하도록 배선해야 합니다 (4번 항목에 메모 추가함).
+- 필요한 작업:
+  1. 4번 항목(Job 실행/Worker 분리) 구현 시 `append_job_event()` 호출 배선.
+  2. 파이프라인 단계별 큐 카운트를 채우려면 실시간 큐/Worker 상태 조회 API가 먼저 필요 (4번 항목과 연계).
 
 ## 8. 배포/실행 환경
 
