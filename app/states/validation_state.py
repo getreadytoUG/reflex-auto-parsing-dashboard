@@ -2,6 +2,8 @@ from typing import TypedDict
 
 import reflex as rx
 
+from app.parsers.contracts import BlockKind
+
 
 class CodeLine(TypedDict):
     no: str
@@ -630,3 +632,111 @@ class ValidationState(rx.State):
     @rx.var
     def page_label(self) -> str:
         return f"{self.current_page} / {self.total_pages}"
+
+
+def _normalize_kind(raw_kind: str) -> str:
+    """알 수 없는 kind 값은 BlockKind.UNKNOWN에 대응하는 값으로 방어적으로 처리한다."""
+    try:
+        return BlockKind(raw_kind).value
+    except ValueError:
+        return BlockKind.UNKNOWN.value
+
+
+def _chunks_to_markdown_lines(chunks: list[dict]) -> list[CodeLine]:
+    """청크들을 이어 붙인 뒤 줄 단위로 잘라 번호를 매긴다."""
+    lines: list[CodeLine] = []
+    line_no = 1
+    kind_to_style = {
+        BlockKind.HEADING.value: "h1",  # level별 h1/h2 구분은 Part B에서 다듬을 여지 있음 — 지금은 heading을 전부 h1으로 표시
+        BlockKind.PARAGRAPH.value: "body",
+        BlockKind.LIST.value: "list",
+        BlockKind.TABLE.value: "table",
+        BlockKind.CAPTION.value: "body",
+        BlockKind.FOOTNOTE.value: "body",
+        BlockKind.UNKNOWN.value: "body",
+    }
+    for chunk in chunks:
+        kind = _normalize_kind(chunk["kind"])
+        for text_line in str(chunk["text"]).splitlines() or [""]:
+            lines.append(
+                {
+                    "no": f"{line_no:03d}",
+                    "text": text_line,
+                    "indent": "",
+                    "kind": kind_to_style.get(kind, "body"),
+                    "selected": False,
+                }
+            )
+            line_no += 1
+        lines.append({"no": f"{line_no:03d}", "text": "", "indent": "", "kind": "blank", "selected": False})
+        line_no += 1
+    return lines
+
+
+def _chunks_to_json_lines(chunks: list[dict]) -> list[CodeLine]:
+    """청크 리스트 전체를 pretty-print된 JSON 텍스트로 만들고 줄 단위로 자른다."""
+    import json
+
+    if not chunks:
+        return []
+
+    text = json.dumps(chunks, ensure_ascii=False, indent=2)
+    return [
+        {"no": f"{i + 1:03d}", "text": line, "indent": "", "kind": "json", "selected": False}
+        for i, line in enumerate(text.splitlines())
+    ]
+
+
+def _chunks_to_blocks(chunks: list[dict]) -> list[BlockItem]:
+    return [
+        {
+            "block_id": c["block_id"],
+            "kind": _normalize_kind(c["kind"]),
+            "label": _normalize_kind(c["kind"]).capitalize(),
+            "excerpt": str(c["text"])[:80],
+            "page": str(c["page"]),
+            "order": str(c["order"]),
+            "confidence": str(c["confidence"]),
+            "selected": False,
+        }
+        for c in chunks
+    ]
+
+
+def _chunks_to_tables(chunks: list[dict]) -> list[TableItem]:
+    return [
+        {
+            "block_id": c["block_id"],
+            "caption": str(c["text"])[:40] or "(제목 없음)",
+            "size": "-",  # 표 행/열 크기는 payload에 없으므로 플레이스홀더 — 실제 스키마 확인 시 채움
+            "page": str(c["page"]),
+            "status": "Completed",
+        }
+        for c in chunks
+        if _normalize_kind(c["kind"]) == BlockKind.TABLE.value
+    ]
+
+
+def _chunks_to_heading_tree(chunks: list[dict]) -> list[HeadingItem]:
+    return [
+        {
+            "block_id": c["block_id"],
+            "level": int(c["level"]) if str(c["level"]).isdigit() else 1,
+            "text": str(c["text"])[:80],
+            "page": str(c["page"]),
+            "status": "확정",  # 실제 검수 상태 필드가 CHILD_COLLECTION에 있는지 불명 — 있으면 매핑 교체
+            "selected": False,
+        }
+        for c in chunks
+        if _normalize_kind(c["kind"]) == BlockKind.HEADING.value
+    ]
+
+
+def _block_to_inspector_fields(block: BlockItem) -> list[InspectorField]:
+    return [
+        {"label": "Block ID", "value": block["block_id"]},
+        {"label": "Kind", "value": block["kind"]},
+        {"label": "Page", "value": block["page"]},
+        {"label": "Order", "value": block["order"]},
+        {"label": "Confidence", "value": block["confidence"]},
+    ]
