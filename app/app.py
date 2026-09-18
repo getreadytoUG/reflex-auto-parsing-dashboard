@@ -5,6 +5,7 @@ from app.pages.documents import documents_page
 from app.pages.jobs import jobs_page
 from app.pages.settings import settings_page
 from app.pages.validation import validation_page
+from app.states.dashboard_state import DashboardState
 from app.states.documents_state import DocumentsState
 
 
@@ -27,7 +28,7 @@ app = rx.App(
         ),
     ],
 )
-app.add_page(index, route="/")
+app.add_page(index, route="/", on_load=DashboardState.load_dashboard)
 app.add_page(
     documents_page, route="/documents", on_load=DocumentsState.load_documents
 )

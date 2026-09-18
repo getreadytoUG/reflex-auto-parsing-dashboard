@@ -4,6 +4,7 @@ import reflex as rx
 import reflex_xy
 
 from app.services.job_log_service import JobLogEvent
+from app.services import job_log_service, qdrant_service
 
 
 class KpiItem(TypedDict):
@@ -28,197 +29,46 @@ class JobRow(TypedDict):
 
 
 class DashboardState(rx.State):
-    kpis: list[KpiItem] = [
-        {
-            "label": "전체 문서",
-            "value": "12,486",
-            "unit": "건",
-            "delta": "+184",
-            "trend": "up",
-            "icon": "files",
-        },
-        {
-            "label": "파싱 성공",
-            "value": "11,032",
-            "unit": "건",
-            "delta": "88.4%",
-            "trend": "up",
-            "icon": "circle-check",
-        },
-        {
-            "label": "Warning",
-            "value": "874",
-            "unit": "건",
-            "delta": "+37",
-            "trend": "up",
-            "icon": "triangle-alert",
-        },
-        {
-            "label": "Failed",
-            "value": "312",
-            "unit": "건",
-            "delta": "-12",
-            "trend": "down",
-            "icon": "circle-x",
-        },
-        {
-            "label": "검수 필요",
-            "value": "268",
-            "unit": "건",
-            "delta": "+21",
-            "trend": "up",
-            "icon": "clipboard-check",
-        },
-        {
-            "label": "평균 파싱 시간",
-            "value": "42.6",
-            "unit": "초/문서",
-            "delta": "-3.1초",
-            "trend": "down",
-            "icon": "timer",
-        },
-    ]
+    kpis: list[KpiItem] = []
+    file_types: list[str] = []
+    file_type_counts: list[int] = []
+    parsers: list[str] = []
+    parser_throughput: list[int] = []
+    recent_jobs: list[JobRow] = []
+    queue_stages: list[tuple[str, str, int]] = []
 
-    file_types: list[str] = [
-        "PDF",
-        "HWP",
-        "HWPX",
-        "DOCX",
-        "XLSX",
-        "PPTX",
-        "이미지",
-    ]
-    file_type_counts: list[int] = [5820, 2410, 1180, 1345, 842, 496, 393]
+    dashboard_loading: bool = True
+    dashboard_error: str = ""
 
-    parsers: list[str] = [
-        "PdfPlumber",
-        "PyMuPDF",
-        "HwpAdapter",
-        "DocxAdapter",
-        "OCR-Tesseract",
-        "TableFormer",
-    ]
-    parser_throughput: list[int] = [3120, 2480, 2110, 1360, 940, 620]
+    @rx.event
+    async def load_dashboard(self):
+        self.dashboard_loading = True
+        self.dashboard_error = ""
 
-    recent_jobs: list[JobRow] = [
-        {
-            "id": "JOB-24713",
-            "file_name": "2024년_국가연구개발사업_예산배분안.pdf",
-            "file_type": "PDF",
-            "parser": "PyMuPDF",
-            "pages": "128 p",
-            "duration": "1분 12초",
-            "requester": "김서연",
-            "started_at": "10:42",
-            "status": "Completed",
-        },
-        {
-            "id": "JOB-24712",
-            "file_name": "행정정보_공동이용_협약서_최종본.hwp",
-            "file_type": "HWP",
-            "parser": "HwpAdapter",
-            "pages": "34 p",
-            "duration": "38초",
-            "requester": "이준호",
-            "started_at": "10:39",
-            "status": "Parsing",
-        },
-        {
-            "id": "JOB-24711",
-            "file_name": "3분기_내부감사_결과보고서_v3.docx",
-            "file_type": "DOCX",
-            "parser": "DocxAdapter",
-            "pages": "22 p",
-            "duration": "19초",
-            "requester": "박민정",
-            "started_at": "10:35",
-            "status": "Warning",
-        },
-        {
-            "id": "JOB-24710",
-            "file_name": "지방자치단체_보조금_집행내역.xlsx",
-            "file_type": "XLSX",
-            "parser": "TableFormer",
-            "pages": "58 sheet",
-            "duration": "1분 47초",
-            "requester": "최도윤",
-            "started_at": "10:31",
-            "status": "Completed",
-        },
-        {
-            "id": "JOB-24709",
-            "file_name": "정보시스템_구축_제안요청서(RFP).pdf",
-            "file_type": "PDF",
-            "parser": "PdfPlumber",
-            "pages": "212 p",
-            "duration": "—",
-            "requester": "정하늘",
-            "started_at": "10:28",
-            "status": "Queued",
-        },
-        {
-            "id": "JOB-24708",
-            "file_name": "민원처리_표준매뉴얼_스캔본.pdf",
-            "file_type": "이미지",
-            "parser": "OCR-Tesseract",
-            "pages": "76 p",
-            "duration": "4분 03초",
-            "requester": "오세진",
-            "started_at": "10:21",
-            "status": "Failed",
-        },
-        {
-            "id": "JOB-24707",
-            "file_name": "부서별_인사발령_공고문_2024-09.hwpx",
-            "file_type": "HWPX",
-            "parser": "HwpAdapter",
-            "pages": "12 p",
-            "duration": "11초",
-            "requester": "한지원",
-            "started_at": "10:14",
-            "status": "Completed",
-        },
-        {
-            "id": "JOB-24706",
-            "file_name": "클라우드_전환_사업_착수보고.pptx",
-            "file_type": "PPTX",
-            "parser": "DocxAdapter",
-            "pages": "45 p",
-            "duration": "—",
-            "requester": "서지훈",
-            "started_at": "10:02",
-            "status": "Cancelled",
-        },
-        {
-            "id": "JOB-24705",
-            "file_name": "개인정보_영향평가_결과서_요약.pdf",
-            "file_type": "PDF",
-            "parser": "PyMuPDF",
-            "pages": "63 p",
-            "duration": "52초",
-            "requester": "김서연",
-            "started_at": "09:58",
-            "status": "Warning",
-        },
-        {
-            "id": "JOB-24704",
-            "file_name": "전자문서_보존기간_기준표.xlsx",
-            "file_type": "XLSX",
-            "parser": "TableFormer",
-            "pages": "9 sheet",
-            "duration": "14초",
-            "requester": "이준호",
-            "started_at": "09:51",
-            "status": "Completed",
-        },
-    ]
+        # 로컬 job 로그는 Qdrant와 별개 데이터 소스지만, "평균 파싱 시간"이
+        # kpis 리스트 안에 함께 들어가야 하므로(kpi_grid()가 리스트 하나만
+        # 순회) Qdrant 집계보다 먼저 읽어서 _build_kpis에 같이 넘긴다.
+        avg_duration = job_log_service.read_average_duration_seconds()
 
-    queue_stages: list[tuple[str, str, int]] = [
-        ("수집 대기", "Ingest", 42),
-        ("파서 처리", "Parse", 18),
-        ("구조 분석", "Structure", 11),
-        ("검수 대기", "Review", 268),
-    ]
+        try:
+            stats = await qdrant_service.aggregate_document_stats()
+            self.kpis = _build_kpis(stats, avg_duration)
+            self.file_types = list(stats["file_type_counts"].keys())
+            self.file_type_counts = list(stats["file_type_counts"].values())
+        except Exception as e:
+            self.dashboard_error = f"대시보드 통계를 불러오지 못했습니다: {e}"
+        finally:
+            self.dashboard_loading = False
+
+        recent = job_log_service.read_recent_jobs()
+        self.recent_jobs = [_job_event_to_row(e) for e in recent]
+        throughput = job_log_service.read_parser_throughput()
+        self.parsers = throughput["parser"]
+        self.parser_throughput = throughput["documents"]
+
+        # 파이프라인 단계별 카운트: 실시간 큐 시스템이 없어 항상 빈 리스트.
+        # UI(Task 5)가 이 경우 "실시간 큐 연동 대기" 안내로 대체한다.
+        self.queue_stages = []
 
     @reflex_xy.data
     def file_type_data(self) -> dict[str, list[str] | list[int]]:
