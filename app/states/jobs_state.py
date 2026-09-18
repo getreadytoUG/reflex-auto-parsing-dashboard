@@ -51,24 +51,32 @@ class JobsState(rx.State):
     jobs: list[ParsingJob] = []
 
     jobs_loading: bool = True
+    summary_error: str = ""
     jobs_error: str = ""
 
     @rx.event
     async def load_jobs(self):
         self.jobs_loading = True
+        self.summary_error = ""
         self.jobs_error = ""
+
+        status_arg = (
+            None
+            if self.selected_status_filter == "전체"
+            else self.selected_status_filter
+        )
+
         try:
-            status_arg = (
-                None
-                if self.selected_status_filter == "전체"
-                else self.selected_status_filter
-            )
             self.summary = await jobs_service.fetch_job_summary()
+        except NotImplementedError as e:
+            self.summary_error = str(e)
+
+        try:
             self.jobs = await jobs_service.fetch_jobs(status_filter=status_arg)
         except NotImplementedError as e:
             self.jobs_error = str(e)
-        finally:
-            self.jobs_loading = False
+
+        self.jobs_loading = False
 
     @rx.event
     async def set_status_filter(self, value: str):

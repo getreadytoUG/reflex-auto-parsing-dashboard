@@ -42,9 +42,9 @@ def summary_row() -> rx.Component:
             class_name="w-full p-6 text-center text-[12px] text-stone-500",
         ),
         rx.cond(
-            JobsState.jobs_error != "",
+            JobsState.summary_error != "",
             rx.el.div(
-                JobsState.jobs_error,
+                JobsState.summary_error,
                 class_name="w-full p-6 text-center text-[12px] font-semibold text-red-600",
             ),
             rx.el.div(
