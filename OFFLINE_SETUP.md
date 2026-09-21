@@ -126,6 +126,7 @@ tar -xf frontend-offline/node/node-v22.23.2-linux-x64.tar.xz -C ~/node22 --strip
 Reflex는 `reflex run`을 실행할 때마다 자체 프레임워크 패키지(react, sonner, radix-ui 등)를 `npm add`/`bun add`로 **매번 다시 검증**합니다. 이건 항상 레지스트리에 접속하려고 시도하는 동작이라, `node_modules`가 이미 채워져 있어도 인터넷이 없으면 실패합니다. 이 검증 자체를 완전히 생략시키는 "캐시 마커"가 있긴 하지만(아래 참고), **서버마다 npm 설치 위치가 달라지면 마커가 깨질 수 있어서**, 마커가 깨져도 무조건 성공하도록 **npm 자체의 로컬 캐시를 통째로 제공**합니다.
 
 ```bash
+$env:PYTHONUTF8="1"
 python -m reflex init          # .web/ 폴더 생성 (reflex.lock/에서 package.json·bun.lock 복원)
 
 # Linux
