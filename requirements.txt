@@ -1,3 +1,4 @@
+# 이거 whl 파일 내부망에 다 있음
 
 reflex[db]==0.9.10.post2
 xy[reflex]==0.0.7
@@ -5,3 +6,8 @@ qdrant-client==1.19.1
 langchain-openai==1.6.2
 async-timeout==5.0.1
 python-dotenv==1.0.1
+fastapi
+httpx
+pytest
+tqdm
+greenlet

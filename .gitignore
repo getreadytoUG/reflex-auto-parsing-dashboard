@@ -21,3 +21,6 @@ docs/
 
 # local runtime data (job log 등)
 data/*.jsonl
+
+# docker 반입용 산출물 (이미지 tar)
+deploy_bundle/

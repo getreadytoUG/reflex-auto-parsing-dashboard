@@ -1,0 +1,31 @@
+# 빌드에 불필요하거나 OS가 달라 섞이면 안 되는 것들
+.web/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.states/
+.pytest_cache/
+.claude/
+node_modules/
+assets/external/
+
+# 오프라인 번들 / 배포 산출물 — 이미지에는 필요 없음
+wheelhouse/
+frontend-offline/
+deploy_bundle/
+deployment/
+*.tar
+*.tar.gz
+
+# 런타임 데이터 / 비밀값 (컨테이너에는 volume, env_file 로 주입)
+volumes/
+uploaded_files/
+data/
+*.db
+.env
+
+# 문서·테스트
+docs/
+tests/
