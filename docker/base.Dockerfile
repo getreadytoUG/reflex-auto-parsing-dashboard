@@ -3,13 +3,14 @@
 # reflex-base : 폐쇄망 빌드용 "환경" 이미지 (소스코드 없음)
 #
 #  - 외부망(인터넷 O)에서만 빌드합니다.
-#      docker build --platform linux/amd64 -f docker/base.Dockerfile -t reflex-base:1.0.0 .
+#      docker build --platform linux/amd64 -f docker/base.Dockerfile -t reflex-base:1.1.0 .
 #  - 안에 들어가는 것: Python 패키지(venv), Bun, Node/npm, nginx,
 #    npm 오프라인 캐시(/opt/npm-cache), nginx.conf, start.sh
 #  - 내부망에서는 프로젝트 루트의 Dockerfile 이 이 이미지를 FROM 으로 써서
 #    "내부망 소스코드"를 인터넷 없이 빌드합니다.
 # =====================================================================
-FROM python:3.11-slim
+# Python 3.11.18 고정 (Debian 13 trixie)
+FROM python:3.11.18-slim
 
 ENV PYTHONUTF8=1 \
     PYTHONUNBUFFERED=1 \
@@ -25,9 +26,9 @@ RUN apt-get update \
 
 # Bun 1.3.14 — rxconfig.py 의 Linux 고정 경로(/opt/bun/bun)
 COPY --from=oven/bun:1.3.14 /usr/local/bin/bun /opt/bun/bun
-# Node.js 22 (Reflex 최소 22.22.0) — 오프라인 빌드는 npm + 로컬 캐시로 수행
-COPY --from=node:22.23.2-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:22.23.2-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+# Node.js 22.23.4 (Reflex 최소 22.22.0, 베이스와 같은 trixie 빌드) — 오프라인 빌드는 npm + 로컬 캐시로 수행
+COPY --from=node:22.23.4-trixie-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22.23.4-trixie-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
  && ln -s /opt/bun/bun /usr/local/bin/bun \
@@ -52,8 +53,11 @@ ENV REFLEX_USE_NPM=1 \
 #    추가로 캐시 → 내부망 코드가 새 컴포넌트를 써도 오프라인 빌드 가능
 COPY . /tmp/warm
 COPY docker/warm-npm-packages.txt /tmp/warm-npm-packages.txt
+# (reflex.lock 은 지움 — 내부망 Dockerfile 도 지우고 빌드하므로 같은 조건으로 의존성을 풀어야 캐시가 맞음.
+#  1.0.0 은 reflex.lock 을 둔 채로 풀어서 isbot@5.2.2 가 빠졌었고, npm-cache-patch.tar.gz 로 보충했었음)
 RUN cd /tmp/warm \
- && rm -rf .web \
+ && cp -r reflex.lock /tmp/reflex.lock.bak \
+ && rm -rf .web reflex.lock \
  && reflex export --frontend-only --no-zip --loglevel info \
  && cd .web \
  && cp package.json /tmp/package.base.json \
@@ -63,7 +67,12 @@ RUN cd /tmp/warm \
       cp /tmp/package.base.json package.json; \
       npm install --no-save --legacy-peer-deps "$p" >/dev/null 2>&1 && echo "[warm] ok $p" || echo "[warm] skip $p"; \
     done \
- && cd / && rm -rf /tmp/warm /opt/npm-cache/_logs \
+ # reflex.lock 을 둔 채로도 한 번 더 풀어 둠 (1.0.0 캐시 내용까지 포함 → Dockerfile 을 옛 방식으로 써도 오프라인 빌드)
+ && cd /tmp/warm && rm -rf .web && cp -r /tmp/reflex.lock.bak reflex.lock \
+ && reflex export --frontend-only --no-zip --loglevel info \
+ # 패치로 보충했던 isbot@5.2.2 가 캐시에 들어갔는지 확인 (없으면 빌드 실패)
+ && grep -rlq "isbot-5.2.2.tgz" /opt/npm-cache/_cacache/index-v5 \
+ && cd / && rm -rf /tmp/warm /tmp/reflex.lock.bak /opt/npm-cache/_logs \
  && du -sh /opt/npm-cache
 
 # 내부망 빌드/실행 공통 파일

@@ -7,7 +7,7 @@
 #  - 이 파일 + .dockerignore + docker-compose.yml 을 소스 루트에 두고
 #      docker compose up -d --build
 # =====================================================================
-FROM reflex-base:1.0.0
+FROM reflex-base:1.1.0
 
 WORKDIR /app
 COPY . .
@@ -24,7 +24,10 @@ ENV REFLEX_API_URL=${API_URL} \
     NPM_CONFIG_OFFLINE=true
 
 # npm 오프라인 캐시(/opt/npm-cache)로 프런트엔드 패키지 설치 + 정적 빌드
-RUN rm -rf .web /srv \
+#  - reflex.lock/ 은 지운다: 내부망에서 run_offline.py(npm)로 돌리며 저장된 package-lock.json 이
+#    캐시에 없는 버전(isbot 등)을 고정하고 있어 오프라인 설치가 실패하기 때문.
+#    지우면 베이스 이미지 캐시와 같은 버전으로 풀린다. (이미지 안에서만 지움, 원본 소스는 그대로)
+RUN rm -rf .web /srv reflex.lock \
  && reflex export --frontend-only --no-zip --loglevel info \
  && mkdir -p /srv \
  && cp -r .web/build/client/. /srv/ \

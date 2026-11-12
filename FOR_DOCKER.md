@@ -18,11 +18,12 @@
 | `docker/warm-npm-packages.txt` | npm 캐시에 미리 넣을 패키지 목록 | ✗ |
 | `docker/nginx.conf`, `docker/start.sh` | 베이스 이미지 안에 포함됨 | ✗ |
 | `Dockerfile` | 내부망 소스 빌드 (인터넷 없이) | ✅ 소스 루트에 |
+| `npm-cache-patch.tar.gz` | `reflex-base:1.0.0` 에 빠져 있던 npm 캐시 보충 (400KB) | ✅ 소스 루트에 |
 | `.dockerignore` | 빌드에서 `.web/`, `.env`, 데이터 등 제외 | ✅ 소스 루트에 |
 | `docker-compose.yml` | 빌드 + 실행 | ✅ 소스 루트에 |
 | `reflex-base_1.0.0.tar` | 베이스 이미지 | ✅ 아무 곳에 |
 
-`deploy_bundle/` 폴더에 반입할 4개가 모여 있습니다.
+`deploy_bundle/` 폴더에 반입할 5개가 모여 있습니다.
 
 ---
 
@@ -41,7 +42,7 @@ docker save reflex-base:1.0.0 -o deploy_bundle/reflex-base_1.0.0.tar
 docker load -i reflex-base_1.0.0.tar
 ```
 
-`Dockerfile`, `.dockerignore`, `docker-compose.yml` 3개를 **내부망 소스 루트**(`rxconfig.py` 가 있는 폴더)에 복사합니다.
+`Dockerfile`, `.dockerignore`, `docker-compose.yml`, `npm-cache-patch.tar.gz` 4개를 **내부망 소스 루트**(`rxconfig.py` 가 있는 폴더)에 복사합니다.
 
 ## ③ 내부망 — 빌드 + 실행 (소스 바꿀 때마다 이것만)
 
@@ -70,6 +71,7 @@ docker compose logs -f app        # "App running" 보이면 Ctrl+C
 
 | 항목 | 내용 |
 | --- | --- |
+| `reflex.lock/` | 내부망에서 `run_offline.py`(npm)로 실행하며 저장된 `package-lock.json` 이 캐시에 없는 버전(`isbot@5.2.2` 등)을 고정해 오프라인 설치가 실패했음 → `Dockerfile` 이 **이미지 안에서만** `reflex.lock/` 을 지우고 빌드 (원본 소스는 그대로). `reflex.lock` 에 package-lock / bun.lock / 없음 3가지 경우 모두 `--network none` 빌드 검증 |
 | 새 Python 패키지 | 내부망 `requirements.txt` 에 베이스에 없는 패키지가 있으면 빌드 첫 단계(`pip install --no-index`)에서 바로 실패 → 외부망에서 `requirements.txt` 갱신 후 베이스 재빌드·재반입 |
 | `rx.data_editor` | Reflex 0.9.10 자체 문제로 **인터넷이 있어도** 빌드 실패(`marked` 누락). 쓰지 말 것 |
 | `Dockerfile` 첫 줄 | `# syntax=docker/dockerfile:1` 를 넣으면 빌드 시 Docker Hub 접속을 시도해 내부망에서 실패 |
